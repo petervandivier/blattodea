@@ -11,7 +11,7 @@
     RootModule = 'blattodea.psm1'
     ModuleVersion = '0.0.0'
     Author = 'Peter Vandivier'
-    RequiredModules = @('AWSPowerShell','powershell-yaml')
+    RequiredModules = @('AWSPowerShell') # 'powershell-yaml'
     FunctionsToExport = '*'
     CmdletsToExport = '*'
     VariablesToExport = '*'
