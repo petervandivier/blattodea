@@ -1,0 +1,32 @@
+[
+  {
+    "AvailabilityZone": "us-east-2a",
+    "CidrBlock": "10.0.100.0/24",
+    "Tags": [
+      {
+        "Key": "Name",
+        "Value": "cockroachdb-sn-2a"
+      }
+    ]
+  },
+  {
+    "AvailabilityZone": "us-east-2b",
+    "CidrBlock": "10.0.200.0/24",
+    "Tags": [
+      {
+        "Key": "Name",
+        "Value": "cockroachdb-sn-2b"
+      }
+    ]
+  },
+  {
+    "AvailabilityZone": "us-east-2c",
+    "CidrBlock": "10.0.300.0/24",
+    "Tags": [
+      {
+        "Key": "Name",
+        "Value": "cockroachdb-sn-2c"
+      }
+    ]
+  }
+]

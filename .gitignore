@@ -1,0 +1,7 @@
+.DS_Store
+conf/secret/*
+!conf/secret/*example*
+conf/aws/*
+!conf/aws/*example*
+conf/actual/*
+!conf/actual/README.md

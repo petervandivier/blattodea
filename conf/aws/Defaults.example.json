@@ -1,0 +1,20 @@
+{
+    "ProfileName":"default",
+    "DefaultRegion":"us-east-2",
+    "EC2": {
+        "NamePattern":"node{0}",
+        "InstanceType":"t3a.small"
+    },
+    "KeyPair": {
+        "Name":"cockroachdb",
+        "BringYourOwn":false
+    },
+    "VPC": {
+        "Tags": [
+            {
+              "Key": "Name",
+              "Value": "cockroachdb-vpc"
+            }
+        ]
+    }
+}

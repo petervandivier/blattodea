@@ -1,0 +1,63 @@
+[
+  {
+    "FromPort": 80,
+    "ToPort": 80,
+    "IpProtocol": "tcp",
+    "UserIdGroupPairs": [
+      {
+        "Description": "Load balancer",
+        "GroupId": "{0}"
+      }
+    ]
+  },
+  {
+    "FromPort": 8080,
+    "ToPort": 8080,
+    "IpProtocol": "tcp",
+    "UserIdGroupPairs": [
+      {
+        "Description": "Admin UI",
+        "GroupId": "{0}"
+      }
+    ]
+  },
+  {
+      "FromPort": 26257,
+      "ToPort": 26257,
+      "IpProtocol": "tcp",
+      "Ipv4Ranges": [
+        {
+          "CidrIp": "{0}",
+          "Description": "Admin cockroach init"
+        }
+      ],
+      "UserIdGroupPairs": [
+        {
+          "Description": "Inter-node and load balancer-node communication",
+          "GroupId": "{0}"
+        }
+      ] 
+  },
+  {
+    "FromPort": 22,
+    "ToPort": 22,
+    "IpProtocol": "tcp",
+    "Ipv4Ranges": [
+      {
+        "CidrIp": "{0}",
+        "Description": "Admin ssh"
+      }
+    ]
+  },
+  {
+    "FromPort": -1,
+    "ToPort": -1,
+    "IpProtocol": "icmp",
+    "UserIdGroupPairs": [
+      {
+        "Description": "ping & telnet",
+        "GroupId": "{0}"
+      }
+    ] 
+  }
+]
