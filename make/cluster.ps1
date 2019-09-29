@@ -149,6 +149,6 @@ foreach($node in $cluster.Instances) {
     }
 
 # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/set-time.html
-    dcp -i $sshKey ./resources/default/mk-chrony.sh "centos@$ip`:/tmp/"
+    dcp -i $sshKey ./templates/default/mk-chrony.sh "centos@$ip`:/tmp/"
     dsh -i $sshKey centos@$ip 'sudo /tmp/mk-chrony.sh'
 }

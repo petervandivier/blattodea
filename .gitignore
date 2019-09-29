@@ -5,3 +5,4 @@ conf/target/*
 !conf/target/README.md
 conf/actual/*
 !conf/actual/README.md
+templates/initdb/securecockroachdb.service
