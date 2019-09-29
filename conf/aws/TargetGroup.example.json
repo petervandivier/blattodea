@@ -1,0 +1,9 @@
+{
+    "HealthCheckPath": "/health?ready=1",
+    "HealthCheckPort": 8080,
+    "HealthCheckProtocol": "http",
+    "Port": 26257,
+    "Protocol": "tcp",
+    "Name": "cockroachdb-tg",
+    "TargetType": "instance"
+}

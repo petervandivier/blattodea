@@ -1,4 +1,5 @@
 #!/usr/bin/env pwsh
+#Requires -Module blattodea
 
 #region Header
 
@@ -22,7 +23,7 @@ $subnets = @()
 
 foreach($sn in $btd_Subnets){
 # New-EC2Subnet doesn't accept tags and i can't think of a sensible way to splat 
-    $Subnet = New-EC2Subnet -VpcId $vpc.VpcId -CidrBlock $sn.CidrBlock -AvailabilityZone $az.Name
+    $Subnet = New-EC2Subnet -VpcId $vpc.VpcId -CidrBlock $sn.CidrBlock -AvailabilityZone $sn.AvailabilityZone
     New-EC2Tag -ResourceId $Subnet.SubnetId -Tag $sn.Tags
     New-EC2Tag -ResourceId $Subnet.SubnetId -Tag $btd_CommonTags.ToTagArray()
 

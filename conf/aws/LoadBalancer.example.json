@@ -1,0 +1,6 @@
+{
+    "IpAddressType": "ipv4",
+    "Name": "cockroachdb-lb",
+    "Scheme": "internal",
+    "Type": "network"
+}
