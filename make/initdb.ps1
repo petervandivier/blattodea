@@ -4,7 +4,7 @@
 $ec2 = Get-Content -Path ./conf/actual/Cluster.json      | ConvertFrom-Json
 
 $certDir = Resolve-Path -Path ($btd_Defaults.CertsDirectory)
-$sshKey = Resolve-Path -Path "$jira_ticket.pem" 
+$sshKey = Resolve-Path "conf/secret/$($btd_Defaults.KeyPair.Name).pem"
 $getEc2 = [scriptblock]{Get-EC2Instance -InstanceId $ec2.Instances.InstanceId}
 $cluster = (& $getEc2)
 

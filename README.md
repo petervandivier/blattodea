@@ -22,9 +22,7 @@ Currently the module is only meant for ephemeral deployment and teardown. Finali
 ```pwsh
 Import-Module ../blattodea
 
-. make/cluster
-. make/loadbalancer
-. make/certs
+. ./make-all.ps1
 ```
 
 > TODO: ENI, RTB, DOPT, ACL tags @ cluster
@@ -34,8 +32,7 @@ Import-Module ../blattodea
 ```pwsh
 Import-Module ../blattodea
 
-. destroy/loadbalancer
-. destroy/cluster
+. ./destroy-all.ps1
 ```
 
 [1]: https://docs.aws.amazon.com/powershell/latest/reference/

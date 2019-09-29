@@ -5,7 +5,7 @@
 
 $kp = New-EC2KeyPair -KeyName $btd_Defaults.KeyPair.Name
 
-$sshKey = "conf/secret/$($btd_Defaults.KeyPair.Name).pem"
+$sshKey = Resolve-Path "conf/secret/$($btd_Defaults.KeyPair.Name).pem"
 
 $kp.KeyMaterial | Set-Content $sshKey -Force
 chmod 0600 $sshKey
