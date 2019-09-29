@@ -24,6 +24,7 @@ Import-Module ../blattodea
 
 . make/cluster
 . make/loadbalancer
+. make/certs
 ```
 
 > TODO: ENI, RTB, DOPT, ACL tags @ cluster

@@ -9,6 +9,7 @@
         "Name":"cockroachdb",
         "BringYourOwn":false
     },
+    "CertsDirectory":"~/.cockroachdb-certs",
     "VPC": {
         "Tags": [
             {
