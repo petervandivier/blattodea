@@ -1,17 +1,15 @@
 #!/usr/bin/env pwsh
 #Requires -Module AWSPowerShell
 
-Get-ChildItem -Path ./conf/aws | 
-    Where-Object BaseName -NotLike "*example*" |
-    ForEach-Object {
-        $configuration = @{
-            Name = "btd_$($_.BaseName)"
-            Value = (Get-Content -LiteralPath $_.FullName | ConvertFrom-Json)
-            Force = $true
-            Scope = 'Global'
-        }
-        New-Variable @configuration
+Get-ChildItem -Path ./conf/target/*.json | ForEach-Object {
+    $configuration = @{
+        Name = "btd_$($_.BaseName)"
+        Value = (Get-Content -LiteralPath $_.FullName | ConvertFrom-Json)
+        Force = $true
+        Scope = 'Global'
     }
+    New-Variable @configuration
+}
 
 Set-DefaultAWSRegion -Region $btd_Defaults.DefaultRegion -Scope Global
 
