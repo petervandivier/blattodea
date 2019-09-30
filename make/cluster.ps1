@@ -5,9 +5,13 @@
 
 $kp = New-EC2KeyPair -KeyName $btd_Defaults.KeyPair.Name
 
-$sshKey = Resolve-Path "conf/secret/$($btd_Defaults.KeyPair.Name).pem"
+$sshKey = "conf/secret/$($btd_Defaults.KeyPair.Name).pem"
 
 $kp.KeyMaterial | Set-Content $sshKey -Force
+$kp | Select-Object KeyFingerprint, KeyName | ConvertTo-Json | Set-Content ./conf/actual/KeyPair.json -Force
+
+$sshKey = Resolve-Path $sshKey
+
 chmod 0600 $sshKey
 
 #endregion Header
@@ -18,6 +22,7 @@ $vpc = New-EC2Vpc -CidrBlock $btd_VPC.CidrBlock
 New-EC2Tag -ResourceId $vpc.VpcId -Tag $btd_Defaults.VPC.Tags
 New-EC2Tag -ResourceId $vpc.VpcId -Tag $btd_CommonTags.ToTagArray()
 $vpc = Get-EC2Vpc -VpcId $vpc.VpcId # do we need to refresh?
+$vpc | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/VPC.json -Force
 
 $subnets = @()
 
@@ -31,11 +36,13 @@ foreach($sn in $btd_Subnets){
 }
 
 $subnets = Get-EC2Subnet -SubnetId $subnets
+$subnets | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/Subnets.json -Force
 
 $igw = New-EC2InternetGateway
 New-EC2Tag -ResourceId $igw.InternetGatewayId -Tag $btd_CommonTags.ToTagArray()
 Add-EC2InternetGateway -VpcId $vpc.VpcId -InternetGatewayId $igw.InternetGatewayId
 $igw = Get-EC2InternetGateway -InternetGatewayId $igw.InternetGatewayId
+$igw | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/IGW.json -Force
 
 #endregion vpcAndSubnet
 
@@ -55,6 +62,8 @@ $rtb = Get-EC2RouteTable -Filter @{Name='vpc-id';Values=$vpc.VpcId}
 
 New-EC2Tag -ResourceId $rtb.RouteTableId -Tag $btd_CommonTags.ToTagArray()
 New-EC2Route -RouteTableId $rtb.RouteTableId -GatewayId $igw.InternetGatewayId -DestinationCidrBlock '0.0.0.0/0' | Out-Null 
+
+Get-EC2SecurityGroup $sg_id | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/SecurityGroup.json -Force
 
 #endregion SecurityGroup
 
@@ -111,6 +120,7 @@ foreach($node in ($cluster.Instances)){
 }
 
 $cluster = Get-EC2Instance @($cluster.Instances.InstanceId)
+$cluster  | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/Cluster.json -Force
 
 #endregion EC2
 
@@ -127,12 +137,7 @@ Write-Host "$(Get-Date) : all nodes report running" -ForegroundColor Blue
 
 $cluster = (& $getEc2)
 
-Get-EC2SecurityGroup $sg_id | 
-            ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/SecurityGroup.json -Force
-$vpc      | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/VPC.json           -Force
-$subnets  | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/Subnets.json       -Force
-$igw      | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/IGW.json           -Force
-$cluster  | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/Cluster.json       -Force
+$cluster  | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/Cluster.json -Force
 
 foreach($node in $cluster.Instances) {
     $nodeName = ($node.Tags | Where-Object Key -eq Name).Value
