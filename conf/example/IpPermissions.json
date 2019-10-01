@@ -14,9 +14,15 @@
     "FromPort": 8080,
     "ToPort": 8080,
     "IpProtocol": "tcp",
+    "Ipv4Ranges": [
+      {
+        "CidrIp": "{0}",
+        "Description": "Admin UI (external)"
+      }
+    ],
     "UserIdGroupPairs": [
       {
-        "Description": "Admin UI",
+        "Description": "Admin UI (internal)",
         "GroupId": "{0}"
       }
     ]
