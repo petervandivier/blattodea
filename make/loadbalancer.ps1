@@ -1,8 +1,9 @@
 #!/usr/bin/env pwsh
 #Requires -Module blattodea
 
-$vpc =  Get-Content ./conf/actual/VPC.json     | ConvertFrom-Json
-$sn  =  Get-Content ./conf/actual/Subnets.json | ConvertFrom-Json
+$vpc = Get-Content ./conf/actual/VPC.json     | ConvertFrom-Json
+$sn  = Get-Content ./conf/actual/Subnets.json | ConvertFrom-Json
+$ec2 = Get-Content ./conf/actual/Cluster.json | ConvertFrom-Json
 
 $LoadBalancer = @{
     IpAddressType = $btd_LoadBalancer.IpAddressType 
@@ -27,6 +28,10 @@ $TargetGroup = @{
 }
 
 $tg = New-ELB2TargetGroup @TargetGroup 
+
+foreach($id in $ec2.Instances.InstanceId){
+    Register-ELB2Target -TargetGroupArn $tg.TargetGroupArn -Target @{Id=$id;Port=26257}
+}
 
 $Listener = @{
     LoadBalancerArn = $elb.LoadBalancerArn 

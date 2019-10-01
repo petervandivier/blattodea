@@ -4,8 +4,8 @@
 $sshKey = Resolve-Path -Path "conf/secret/$($btd_Defaults.KeyPair.Name).pem"
 $elb = Get-Content -Path ./conf/actual/LoadBalancer.json | ConvertFrom-Json
 $ec2 = Get-Content -Path ./conf/actual/Cluster.json      | ConvertFrom-Json
-# TODO: 👇 debug this
-$elbPublicIpAddress = $null # nslookup $elb.DNSName | grep Server | awk '{print $2}'
+
+$elbPublicIpAddress = (dig $elb.DNSName +short) -join ' '
 
 $getEc2 = [scriptblock]{Get-EC2Instance -InstanceId $ec2.Instances.InstanceId}
 
