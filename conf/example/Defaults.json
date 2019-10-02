@@ -3,7 +3,19 @@
     "DefaultRegion":"us-east-2",
     "EC2": {
         "NamePattern":"node{0}",
-        "InstanceType":"t3a.small"
+        "InstanceType":"t3a.small",
+        "Image":{
+            "Description":"most recently available aws marketplace community ami centos image",
+            "Id":"ami-0ff760d16d9497662",
+            "Query":[
+                "Get-EC2Image -Filter @(",
+                "@{Name='product-code';Values='aw0evgkw8e5c1q413zgy5pjce'},",
+                "@{Name='owner-id';Values='679593333241'}) |",
+                "Sort-Object -Property CreationDate -Descending | ",
+                "Select-Object -First 1"
+            ],
+            "Link":"https://wiki.centos.org/Cloud/AWS"
+        }
     },
     "KeyPair": {
         "Name":"cockroachdb",

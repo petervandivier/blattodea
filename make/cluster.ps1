@@ -74,18 +74,9 @@ Get-EC2SecurityGroup $sg_id | ConvertTo-Json -Depth 5 | Set-Content ./conf/actua
 
 #region EC2
 
-# most recently available aws marketplace community ami centos image
-# https://wiki.centos.org/Cloud/AWS
-$centos_image = Get-EC2Image -Filter @(
-        @{Name='product-code';Values='aw0evgkw8e5c1q413zgy5pjce'},
-        @{Name='owner-id';Values='679593333241'}
-    ) |
-    Sort-Object -Property CreationDate -Descending | 
-    Select-Object -First 1
-
 $image_splat = @{
     AssociatePublicIp = $true # TODO: deploy config via user data and rm public IP
-    ImageId = $centos_image.ImageId
+    ImageId = $btd_Defaults.EC2.Image.Id
     KeyName = $kp.KeyName
     SecurityGroupId = $sg_id
     InstanceType = $btd_Defaults.EC2.InstanceType
