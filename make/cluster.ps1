@@ -76,7 +76,10 @@ Get-EC2SecurityGroup $sg_id | ConvertTo-Json -Depth 5 | Set-Content ./conf/actua
 
 # most recently available aws marketplace community ami centos image
 # https://wiki.centos.org/Cloud/AWS
-$centos_image = Get-EC2Image -Filter @{Name='product-code';Values='aw0evgkw8e5c1q413zgy5pjce'} |
+$centos_image = Get-EC2Image -Filter @(
+        @{Name='product-code';Values='aw0evgkw8e5c1q413zgy5pjce'},
+        @{Name='owner-id';Values='679593333241'}
+    ) |
     Sort-Object -Property CreationDate -Descending | 
     Select-Object -First 1
 
