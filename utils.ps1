@@ -43,5 +43,6 @@ Add-Member -InputObject $btd_IpPermissions `
 
         ($this | Where-Object IpV4Ranges -ne $null).IpV4Ranges | ForEach-Object {
             $_.CidrIp = "$my_ip/32"
+            $_.Description = ($_.Description -f "$(whoami)@$(hostname)")
         }  
     }

@@ -17,7 +17,7 @@
     "Ipv4Ranges": [
       {
         "CidrIp": "{0}",
-        "Description": "Admin UI (external)"
+        "Description": "Admin UI ({0})"
       }
     ],
     "UserIdGroupPairs": [
@@ -34,7 +34,7 @@
       "Ipv4Ranges": [
         {
           "CidrIp": "{0}",
-          "Description": "Admin cockroach init"
+          "Description": "Admin cockroach init ({0})"
         }
       ],
       "UserIdGroupPairs": [
@@ -51,7 +51,7 @@
     "Ipv4Ranges": [
       {
         "CidrIp": "{0}",
-        "Description": "Admin ssh"
+        "Description": "Admin ssh ({0})"
       }
     ]
   },

@@ -6,6 +6,7 @@ $igw =  Get-Content ./conf/actual/IGW.json           | ConvertFrom-Json
 $sg  =  Get-Content ./conf/actual/SecurityGroup.json | ConvertFrom-Json
 
 $getEni = [scriptblock]{Get-EC2NetworkInterface -Filter @{Name='vpc-id';Value=$vpc.VpcId}}
+$getSubnet = [scriptblock]{Get-EC2Subnet -Filter @{Name='subnet-id';Value=$sn.SubnetId}}
 
 if(& $getEni){
     while(0 -lt (& $getEni).Count){
@@ -22,9 +23,13 @@ Remove-EC2InternetGateway -InternetGatewayId $igw.InternetGatewayId -Confirm:$fa
 Remove-EC2SecurityGroup -GroupId $sg.GroupId -Confirm:$false
 
 do{
-    $sn.SubnetId | Remove-EC2Subnet -Confirm:$false -ErrorAction SilentlyContinue 
-    Write-Host "Could not remove all subnets at this time. Sleeping 5 before retry..." -ForegroundColor Yellow
-    Start-Sleep -Seconds 5
-}while(0 -ne ($sn.SubnetId | Get-EC2Subnet -ErrorAction SilentlyContinue).Count)
+    try {
+        (& $getSubnet) | Remove-EC2Subnet -Confirm:$false
+    }
+    catch {
+        Write-Host "Could not remove all subnets at this time. Sleeping 5 before retry..." -ForegroundColor Yellow
+        Start-Sleep -Seconds 5
+    }
+}while(0 -lt (& $getSubnet).Count)
 
 Remove-EC2Vpc -VpcId $vpc.VpcId -Confirm:$false
