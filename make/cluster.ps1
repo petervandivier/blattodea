@@ -3,23 +3,9 @@
 
 $subnets = Get-Content ./conf/actual/Subnets.json | ConvertFrom-Json
 $sg_id = (Get-Content ./conf/actual/SecurityGroup.json | ConvertFrom-Json).GroupId
+$kp = Get-Content ./conf/actual/KeyPair.json | ConvertFrom-Json
 
-if((Get-EC2KeyPair).KeyName -contains $btd_Defaults.KeyPair.Name){
-    $btd_Defaults.KeyPair.Name = "$($btd_Defaults.KeyPair.Name)_$(Get-Random)"
-    Write-Warning "Duplicate Key Pair Name detected."
-    Write-Warning "Hot-swapping KeyName in conf. New name is '$($btd_Defaults.KeyPair.Name)'."
-}
-
-$kp = New-EC2KeyPair -KeyName $btd_Defaults.KeyPair.Name
-
-$sshKey = "conf/secret/$($btd_Defaults.KeyPair.Name).pem"
-
-$kp.KeyMaterial | Set-Content $sshKey -Force
-$kp | Select-Object KeyFingerprint, KeyName | ConvertTo-Json | Set-Content ./conf/actual/KeyPair.json -Force
-
-$sshKey = Resolve-Path $sshKey
-
-chmod 0600 $sshKey
+$sshKey = Resolve-Path "./conf/secret/$($kp.KeyName).pem"
 
 # ⸘ImageIds vary between regions for the same image‽ 
 $ami = Invoke-Expression ($btd_Defaults.EC2.Image.Query -join '')

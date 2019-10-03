@@ -4,6 +4,7 @@
 . make/vpc
 . make/subnet
 . make/securitygroup
+. make/keypair
 . make/cluster
 . make/loadbalancer
 . make/certs
