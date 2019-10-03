@@ -1,7 +1,14 @@
 #!/usr/bin/env pwsh
 #Requires -Module blattodea
 
-#region Header
+$subnets = Get-Content ./conf/actual/Subnets.json | ConvertFrom-Json
+$sg_id = (Get-Content ./conf/actual/SecurityGroup.json | ConvertFrom-Json).GroupId
+
+if((Get-EC2KeyPair).KeyName -contains $btd_Defaults.KeyPair.Name){
+    $btd_Defaults.KeyPair.Name = "$($btd_Defaults.KeyPair.Name)_$(Get-Random)"
+    Write-Warning "Duplicate Key Pair Name detected."
+    Write-Warning "Hot-swapping KeyName in conf. New name is '$($btd_Defaults.KeyPair.Name)'."
+}
 
 $kp = New-EC2KeyPair -KeyName $btd_Defaults.KeyPair.Name
 
@@ -14,69 +21,13 @@ $sshKey = Resolve-Path $sshKey
 
 chmod 0600 $sshKey
 
-#endregion Header
-
-#region vpcAndSubnet
-
-$vpc = New-EC2Vpc -CidrBlock $btd_VPC.CidrBlock
-New-EC2Tag -ResourceId $vpc.VpcId -Tag $btd_Defaults.VPC.Tags
-New-EC2Tag -ResourceId $vpc.VpcId -Tag $btd_CommonTags.ToTagArray()
-$vpc = Get-EC2Vpc -VpcId $vpc.VpcId # do we need to refresh?
-$vpc | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/VPC.json -Force
-
-Get-EC2SecurityGroup -Filter @{Name='vpc-id';Value=$vpc.VpcId} | ForEach-Object {
-    New-EC2Tag -ResourceId $_.GroupId -Tag @{Key='Name';Value='cockroachdb-vpc-default'}
-    New-EC2Tag -ResourceId $_.GroupId -Tag $btd_CommonTags.ToTagArray()
-}
-
-$subnets = @()
-
-foreach($sn in $btd_Subnets){
-# New-EC2Subnet doesn't accept tags and i can't think of a sensible way to splat 
-    $Subnet = New-EC2Subnet -VpcId $vpc.VpcId -CidrBlock $sn.CidrBlock -AvailabilityZone $sn.AvailabilityZone
-    New-EC2Tag -ResourceId $Subnet.SubnetId -Tag $sn.Tags
-    New-EC2Tag -ResourceId $Subnet.SubnetId -Tag $btd_CommonTags.ToTagArray()
-
-    $subnets += $Subnet.SubnetId
-}
-
-$subnets = Get-EC2Subnet -SubnetId $subnets
-$subnets | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/Subnets.json -Force
-
-$igw = New-EC2InternetGateway
-New-EC2Tag -ResourceId $igw.InternetGatewayId -Tag $btd_CommonTags.ToTagArray()
-Add-EC2InternetGateway -VpcId $vpc.VpcId -InternetGatewayId $igw.InternetGatewayId
-$igw = Get-EC2InternetGateway -InternetGatewayId $igw.InternetGatewayId
-$igw | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/IGW.json -Force
-
-#endregion vpcAndSubnet
-
-#region SecurityGroup
-
-$sg_id = New-EC2SecurityGroup -GroupName $btd_SecurityGroup.GroupName -Description $btd_SecurityGroup.Description -VpcId $vpc.VpcId
-New-EC2Tag -Resource $sg_id -Tag $btd_SecurityGroup.Tags
-New-EC2Tag -Resource $sg_id -Tag $btd_CommonTags.ToTagArray()
-
-# https://docs.aws.amazon.com/sdkfornet/v3/apidocs/index.html?page=EC2/TEC2IpPermission.html&tocid=Amazon_EC2_Model_IpPermission
-
-$btd_IpPermissions.SetSecurityGroup($sg_id)
-$btd_IpPermissions.SetMyIp()
-Grant-EC2SecurityGroupIngress -GroupId $sg_id -IpPermission $btd_IpPermissions
-
-$rtb = Get-EC2RouteTable -Filter @{Name='vpc-id';Values=$vpc.VpcId}
-
-New-EC2Tag -ResourceId $rtb.RouteTableId -Tag $btd_CommonTags.ToTagArray()
-New-EC2Route -RouteTableId $rtb.RouteTableId -GatewayId $igw.InternetGatewayId -DestinationCidrBlock '0.0.0.0/0' | Out-Null 
-
-Get-EC2SecurityGroup $sg_id | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/SecurityGroup.json -Force
-
-#endregion SecurityGroup
-
-#region EC2
+# ⸘ImageIds vary between regions for the same image‽ 
+$ami = Invoke-Expression ($btd_Defaults.EC2.Image.Query -join '')
+$ami | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/AMI.json -Force
 
 $image_splat = @{
     AssociatePublicIp = $true # TODO: deploy config via user data and rm public IP
-    ImageId = $btd_Defaults.EC2.Image.Id
+    ImageId = $ami.ImageId
     KeyName = $kp.KeyName
     SecurityGroupId = $sg_id
     InstanceType = $btd_Defaults.EC2.InstanceType
@@ -120,10 +71,6 @@ foreach($node in ($cluster.Instances)){
 
 $cluster = Get-EC2Instance @($cluster.Instances.InstanceId)
 $cluster  | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/Cluster.json -Force
-
-#endregion EC2
-
-# $cluster = Get-EC2Instance -Filter @{Name='tag:platform';Values='cockroachdb'}
 
 $getEc2 = [scriptblock]{Get-EC2Instance @($cluster.Instances.InstanceId)}
 

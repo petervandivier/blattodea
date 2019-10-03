@@ -15,4 +15,3 @@ if(& $getEc2){
 Write-Host "$(Get-Date) : all nodes report state 'terminated'" -ForegroundColor Blue
 
 Remove-EC2KeyPair -KeyName $btd_Defaults.KeyPair.Name -Confirm:$false 
-Remove-Item -Path "./conf/secret/$($btd_Defaults.KeyPair.Name).pem"
