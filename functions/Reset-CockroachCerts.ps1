@@ -12,6 +12,7 @@ function Reset-CockroachCerts {
         Cluster = (Get-Content ./conf/actual/Cluster.json | ConvertFrom-Json).Instances
         LoadBalancer = Get-Content ./conf/actual/LoadBalancer.json | ConvertFrom-Json
         CertsDir = $btd_Defaults.CertsDirectory
+        OtherNames = '*.elb.us-east-2.amazonaws.com'
     }
     Reset-CockroachCerts @splat
 
@@ -24,7 +25,9 @@ function Reset-CockroachCerts {
         [Parameter(Mandatory=$true)]$CertsDir,
         [string]$AWSRegion = $StoredAWSRegion,
         $IdentityFile = (Resolve-Path -Path "conf/secret/$($btd_Defaults.KeyPair.Name).pem"),
-        [string]$User = 'centos'
+        [string]$User = 'centos',
+        [string]$OtherNames = $null,
+        [switch]$NewCA
     )
     begin{
         $PopRegion = $StoredAWSRegion
@@ -44,7 +47,7 @@ function Reset-CockroachCerts {
 
         Get-ChildItem -Path certs/node* | Remove-Item
 
-        if($something){
+        if($NewCA){
             Get-ChildItem -Path certs, my-safe-directory | Remove-Item
 
             cockroach cert create-ca --certs-dir=certs --ca-key=my-safe-directory/ca.key
@@ -67,7 +70,7 @@ function Reset-CockroachCerts {
                     $PublicIpAddress       # 3 
                     $elbPublicIpAddress    # 4 
                     $LoadBalancer.DNSName  # 5 
-                    $null                  # 6 
+                    $OtherNames            # 6 
                 )
                 Invoke-Expression -Command $createCertCmd 
 
