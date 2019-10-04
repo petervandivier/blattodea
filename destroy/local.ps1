@@ -7,4 +7,4 @@ foreach($key in ($ec2.Instances.KeyName | Select-Object -Unique)){
     Remove-Item -Path "./conf/secret/$key.pem"
 }
 
-Remove-Item $btd_Defaults.CertsDirectory -Recurse -Force -Confirm:$false
+Remove-Item $btd_Defaults.CertsDirectory -Recurse -Force
