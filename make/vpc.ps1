@@ -8,6 +8,6 @@ $vpc = Get-EC2Vpc -VpcId $vpc.VpcId # do we need to refresh?
 $vpc | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/VPC.json -Force
 
 Get-EC2SecurityGroup -Filter @{Name='vpc-id';Value=$vpc.VpcId} | ForEach-Object {
-    New-EC2Tag -ResourceId $_.GroupId -Tag @{Key='Name';Value='cockroachdb-vpc-default'}
+    New-EC2Tag -ResourceId $_.GroupId -Tag @{Key='Name';Value='vpc-default-crdb'}
     New-EC2Tag -ResourceId $_.GroupId -Tag $btd_CommonTags.ToTagArray()
 }
