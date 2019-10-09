@@ -56,7 +56,7 @@ foreach($node in ($cluster.Instances)){
 }
 
 $cluster = Get-EC2Instance @($cluster.Instances.InstanceId)
-$cluster  | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/Cluster.json -Force
+$cluster  | ConvertTo-Json -Depth 10 | Set-Content ./conf/actual/Cluster.json -Force
 
 $getEc2 = [scriptblock]{Get-EC2Instance @($cluster.Instances.InstanceId)}
 
@@ -69,7 +69,7 @@ Write-Host "$(Get-Date) : all nodes report running" -ForegroundColor Blue
 
 $cluster = (& $getEc2)
 
-$cluster  | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/Cluster.json -Force
+$cluster  | ConvertTo-Json -Depth 10 | Set-Content ./conf/actual/Cluster.json -Force
 
 foreach($node in $cluster.Instances) {
     $nodeName = ($node.Tags | Where-Object Key -eq Name).Value
@@ -85,6 +85,7 @@ foreach($node in $cluster.Instances) {
         } until ('alive' -eq (dsh -i $sshKey -o ConnectTimeout=10 centos@$ip 'echo -n "alive"'))
     }
 
+    dsh -i $sshKey centos@$ip "sudo hostnamectl set-hostname '$($nodeName)'"
 # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/set-time.html
     dcp -i $sshKey ./templates/default/mk-chrony.sh "centos@$ip`:/tmp/"
     dsh -i $sshKey centos@$ip 'sudo /tmp/mk-chrony.sh'
