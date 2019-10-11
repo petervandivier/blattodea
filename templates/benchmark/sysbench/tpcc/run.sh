@@ -34,7 +34,7 @@ sysbench \
   --pgsql-password=password \
   --pgsql-db=sbtest \
   /usr/share/sysbench/tests/include/oltp_legacy/parallel_prepare.lua \
-run > oltp_legacy.out
+run | tee oltp_legacy.out
 
 sysbench \
   --db-driver=pgsql \
@@ -49,7 +49,7 @@ cleanup
 
 popd > /dev/null
 
-cp /usr/local/share/sysbench-out /tmp
+mv /usr/local/share/sysbench-out /tmp
 chown -R 0777 /tmp/sysbench-out
 
 # https://unix.stackexchange.com/a/37414/348605
