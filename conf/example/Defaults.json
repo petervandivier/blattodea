@@ -2,7 +2,7 @@
     "ProfileName":"default",
     "DefaultRegion":"us-east-2",
     "EC2": {
-        "NamePattern":"node{0}",
+        "NamePattern":"crdb{0}",
         "InstanceType":"t3a.small",
         "Image":{
             "Description":"most recently available aws marketplace community ami centos image",
@@ -26,7 +26,7 @@
         "Tags": [
             {
               "Key": "Name",
-              "Value": "cockroachdb-vpc"
+              "Value": "vpc-crdb"
             }
         ]
     }
