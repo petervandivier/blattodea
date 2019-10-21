@@ -5,8 +5,8 @@ $script:ec2 = Get-Content ./conf/actual/Cluster.json | ConvertFrom-Json
 $script:IP = $ec2.Instances[0].PublicIPAddress
 $script:jh = Get-Content ./conf/actual/JumpBox.json | ConvertFrom-Json
 
-New-Variable -Name identFile -Value (Resolve-Path "./conf/secret/$($btd_Defaults.KeyPair.Name).pem") -Verbose
-New-Variable -Name certsDir -Value (Resolve-Path "$($btd_Defaults.CertsDirectory)/certs") -Verbose
+New-Variable -Scope Global -Name identFile -Value (Resolve-Path "./conf/secret/$($btd_Defaults.KeyPair.Name).pem") -Verbose
+New-Variable -Scope Global -Name certsDir -Value (Resolve-Path "$($btd_Defaults.CertsDirectory)/certs") -Verbose
 
 foreach($user in $btd_Users){
     $cmd = "CREATE USER $($user.username) WITH PASSWORD '$($user.password)';"    
