@@ -5,8 +5,12 @@ $script:ec2 = Get-Content ./conf/actual/Cluster.json | ConvertFrom-Json
 $script:IP = $ec2.Instances[0].PublicIPAddress
 $script:jh = Get-Content ./conf/actual/JumpBox.json | ConvertFrom-Json
 
-New-Variable -Scope Global -Name identFile -Value (Resolve-Path "./conf/secret/$($btd_Defaults.KeyPair.Name).pem") -Verbose
-New-Variable -Scope Global -Name certsDir -Value (Resolve-Path "$($btd_Defaults.CertsDirectory)/certs") -Verbose
+# $browser = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' "https://$IP`:8080"
+# TODO: ¿Start-Process $browser -Async?
+open -a "Firefox" "https://$IP`:8080" 
+
+New-Variable -Scope Global -Name identFile -Value (Resolve-Path "./conf/secret/$($btd_Defaults.KeyPair.Name).pem") -Verbose -Force
+New-Variable -Scope Global -Name certsDir -Value (Resolve-Path "$($btd_Defaults.CertsDirectory)/certs") -Verbose -Force
 
 foreach($user in $btd_Users){
     $cmd = "CREATE USER $($user.username) WITH PASSWORD '$($user.password)';"    
@@ -24,7 +28,3 @@ foreach($node in @($ec2.Instances + $jh.Instances)){
 
 Write-Host 'cockroach sql --certs-dir=$certsDir --host="$($crdb1.PublicIpAddress)"' -ForegroundColor Cyan
 Write-Host 'dsh -i $identFile centos@"$($crdb1.PublicIpAddress)"' -ForegroundColor Cyan
-
-# $browser = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' "https://$IP`:8080"
-# TODO: ¿Start-Process $browser -Async?
-open -a "Firefox" "https://$IP`:8080" 
