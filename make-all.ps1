@@ -6,6 +6,7 @@
 . make/securitygroup
 . make/keypair
 . make/cluster
+. make/jumpbox
 . make/loadbalancer
 . make/certs
 . make/initdb

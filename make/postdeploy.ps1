@@ -3,6 +3,7 @@
 
 $script:ec2 = Get-Content ./conf/actual/Cluster.json | ConvertFrom-Json
 $script:IP = $ec2.Instances[0].PublicIPAddress
+$script:jh = Get-Content ./conf/actual/JumpBox.json | ConvertFrom-Json
 
 New-Variable -Name identFile -Value (Resolve-Path "./conf/secret/$($btd_Defaults.KeyPair.Name).pem") -Verbose
 New-Variable -Name certsDir -Value (Resolve-Path "$($btd_Defaults.CertsDirectory)/certs") -Verbose
@@ -12,7 +13,7 @@ foreach($user in $btd_Users){
     cockroach sql --certs-dir=$certsDir --host="$IP" --execute="$cmd"
 }
 
-foreach($node in $ec2.Instances){
+foreach($node in @($ec2.Instances + $jh.Instances)){
     $script:IP = $node.PublicIpAddress
     $script:hostname = ($node.Tags | Where-Object key -eq name).Value
     dsh -i $identFile centos@$IP "sudo hostnamectl set-hostname $hostname"
