@@ -12,7 +12,7 @@
                 "@{Name='product-code';Values='aw0evgkw8e5c1q413zgy5pjce'},",
                 "@{Name='owner-id';Values='679593333241'}) |",
                 "Sort-Object -Property CreationDate -Descending | ",
-                "Select-Object -First 1"
+                "Select-Object -First 1;"
             ],
             "Link":"https://wiki.centos.org/Cloud/AWS"
         }
