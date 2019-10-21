@@ -26,7 +26,8 @@ $image_splat = @{
 
 $n = New-EC2Instance @image_splat
 New-EC2Tag -Resource $n.RunningInstance.InstanceId -Tag @{Key='Name';Value=$btd_JumpBox.Name}
-$n = Get-EC2Instance -InstanceId $n.Instances[0].InstanceId
+$getN = [scriptblock]{Get-EC2Instance -InstanceId $n.Instances[0].InstanceId}
+$n = & $getN
 
 # copy instance tags to underlying volumes
 foreach($node in ($n.Instances)){
@@ -37,6 +38,9 @@ foreach($node in ($n.Instances)){
     }
 }
 
-Get-EC2Instance -InstanceId $n.Instances[0].InstanceId | ConvertTo-Json -Depth 10 | Set-Content ./conf/actual/JumpBox.json -Force
-
+while($null -eq $n.PublicIpAddress){
+    Write-Host "Awaiting PublicIPAddress assignment for $($btd_JumpBox.Name)" -ForegroundColor Yellow
+    $n = & $getN
+}
+$n | ConvertTo-Json -Depth 10 | Set-Content ./conf/actual/JumpBox.json -Force
 # https://www.cockroachlabs.com/docs/stable/deploy-cockroachdb-on-aws.html#step-9-run-a-sample-workload
