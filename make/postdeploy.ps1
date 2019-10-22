@@ -20,7 +20,6 @@ foreach($user in $btd_Users){
 foreach($node in @($ec2.Instances + $jh.Instances)){
     $script:IP = $node.PublicIpAddress
     $script:hostname = ($node.Tags | Where-Object key -eq name).Value
-    dsh -i $identFile centos@$IP "sudo hostnamectl set-hostname $hostname"
 
     New-Variable -Value $node -Name $hostname -Scope Global -Force
     Write-Host "Variable $hostname created" -ForegroundColor Green
