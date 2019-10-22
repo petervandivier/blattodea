@@ -40,7 +40,7 @@ $cluster = Get-EC2Instance -InstanceId $cluster.Instances.InstanceId
 
 $cluster.RunningInstance.InstanceId | ForEach-Object {
     $i+=1
-    $name = $btd_Defaults.EC2.NamePattern -f $i
+    $name = $btd_Defaults.EC2.NamePattern -f ($i).ToString('00')
     New-EC2Tag -Resource $_ -Tag @([Amazon.EC2.Model.Tag]::new('Name',$name))
 }
 

@@ -36,13 +36,15 @@ function Build-CrdbCerts {
         [Parameter(Mandatory=$true)][object[]]$Cluster,
         [Parameter(Mandatory=$true)][object]$LoadBalancer,
         [Parameter(Mandatory=$true)]$CertsDir,
-        $IdentityFileDir = (Resolve-Path -Path "./conf/secret"),
+        $IdentFileDir = (Resolve-Path -Path "./conf/secret"),
         [string]$User = 'centos',
         [string]$OtherNames = $null,
         [switch]$NewCA,
         [switch]$Clobber
     )
     begin{
+        $tmpSvcFile = Get-Content ./templates/initdb/securecockroachdb.service.tmp -Raw
+        $allIps = ($Cluster.PrivateIpAddress) -join ','
 
         $errMsg = @"
 Node missing required elements. Certficate issuance skipped.
@@ -74,11 +76,11 @@ Node missing required elements. Certficate issuance skipped.
 
     process{
         foreach($node in $cluster){
-            $IdentityFile = (Resolve-Path "$IdentityFileDir/$($node.KeyName).pem").Path
+            $identFile = (Resolve-Path "$IdentFileDir/$($node.KeyName).pem").Path
             $PublicIpAddress = $node.PublicIpAddress
 
-            if($null -in ($IdentityFile,$PublicIpAddress)){
-                Write-Error $errMsg -f @($IdentityFile,$PublicIpAddress)
+            if($null -in ($identFile,$PublicIpAddress)){
+                Write-Error ($errMsg -f @($identFile,$PublicIpAddress))
             }else{
                 $createCertCmd = $createCertCmdTemplate -f @(
                     $node.PrivateIpAddress # 0 
@@ -91,14 +93,19 @@ Node missing required elements. Certficate issuance skipped.
                 )
                 Invoke-Expression -Command $createCertCmd 
 
-                dsh -i $IdentityFile -o ConnectTimeout=5 $User@$PublicIpAddress 'rm -rf certs; mkdir certs'
-                dcp -i $IdentityFile -o ConnectTimeout=5 -r certs/ $User@$PublicIpAddress`:~/
+                ($tmpSvcFile -f $node.PrivateIpAddress, $allIps) | Set-Content ./securecockroachdb.service -Force
+                dcp -i $identFile ./securecockroachdb.service centos@$PublicIpAddress`:~/
+                Remove-Item ./securecockroachdb.service
+
+                dsh -i $identFile -o ConnectTimeout=5 $User@$PublicIpAddress 'rm -rf certs; mkdir certs'
+                dcp -i $identFile -o ConnectTimeout=5 -r certs/ $User@$PublicIpAddress`:~/
+                dcp -i $identFile -o ConnectTimeout=5 ./templates/initdb/initdb.sh centos@$PublicIpAddress`:~/  
 
                 if($Clobber){
-                    dsh -i $IdentityFile -o ConnectTimeout=5 $User@$PublicIpAddress 'sudo rm -rf /var/lib/cockroach/certs'
-                    dsh -i $IdentityFile -o ConnectTimeout=5 $User@$PublicIpAddress 'sudo mv -f certs /var/lib/cockroach/'
-                    dsh -i $IdentityFile -o ConnectTimeout=5 $User@$PublicIpAddress 'sudo chown -R cockroach.cockroach /var/lib/cockroach'
-                    dsh -i $IdentityFile -o ConnectTimeout=5 $User@$PublicIpAddress 'sudo systemctl restart securecockroachdb'
+                    dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'chmod +x ./getbin.sh && sudo bash ./getbin.sh'
+                    dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'chmod +x ./initdb.sh && sudo bash ./initdb.sh'
+                    # ./initdb.sh only starts, force restart to clobber
+                    dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'sudo systemctl restart securecockroachdb'
                 }
                 
                 Get-ChildItem -Path certs/node* | Remove-Item

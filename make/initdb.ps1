@@ -15,13 +15,17 @@ foreach($node in $cluster.Instances){
     $PublicIpAddress = $node.PublicIpAddress 
     $PrivateIpAddress = $node.PrivateIpAddress
     
-    $sshKey = Resolve-Path -Path  "$keyDir/$($node.KeyName).pem"
+    $identFile = Resolve-Path -Path  "$keyDir/$($node.KeyName).pem"
 
     ($tmp -f $PrivateIpAddress, $allIps) | Set-Content ./templates/initdb/securecockroachdb.service -Force
 
-    dcp -i $sshKey -o ConnectTimeout=5 ./templates/initdb/initdb.sh centos@$PublicIpAddress`:~/  
-    dcp -i $sshKey -o ConnectTimeout=5 ./templates/initdb/securecockroachdb.service centos@$PublicIpAddress`:~/  
-    dsh -i $sshKey -o ConnectTimeout=5 centos@$PublicIpAddress 'chmod +x ./initdb.sh && sudo bash ./initdb.sh'
+    dcp -i $identFile -o ConnectTimeout=5 ./templates/initdb/getbin.sh centos@$PublicIpAddress`:~/  
+    dcp -i $identFile -o ConnectTimeout=5 ./templates/initdb/initdb.sh centos@$PublicIpAddress`:~/  
+    dcp -i $identFile -o ConnectTimeout=5 ./templates/initdb/securecockroachdb.service centos@$PublicIpAddress`:~/  
+    
+    dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'chmod +x ./getbin.sh && sudo ./getbin.sh'
+    dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'chmod +x ./initdb.sh && sudo ./initdb.sh'
+    dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'sudo systemctl start securecockroachdb'
 
     Remove-Item ./templates/initdb/securecockroachdb.service
 }
