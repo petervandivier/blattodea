@@ -10,8 +10,8 @@ $getSubnet = [scriptblock]{Get-EC2Subnet -Filter @{Name='subnet-id';Value=$sn.Su
 
 if(& $getEni){
     while(0 -lt (& $getEni).Count){
-        Write-Host "Awaiting termination of all Network Interfaces. $((& $getEni).Count) remain. Sleeping 5..." -ForegroundColor Yellow
-        Start-Sleep -Seconds 5
+        Write-Host "Awaiting termination of all Network Interfaces. $((& $getEni).Count) remain. Sleeping 10..." -ForegroundColor Yellow
+        Start-Sleep -Seconds 10
     }
 }
 Write-Host "$(Get-Date) : all Network Interfaces destroyed" -ForegroundColor Blue
@@ -27,8 +27,8 @@ do{
         (& $getSubnet) | Remove-EC2Subnet -Confirm:$false
     }
     catch {
-        Write-Host "Could not remove all subnets at this time. Sleeping 5 before retry..." -ForegroundColor Yellow
-        Start-Sleep -Seconds 5
+        Write-Host "Could not remove all subnets at this time. Sleeping 10 before retry..." -ForegroundColor Yellow
+        Start-Sleep -Seconds 10
     }
 }while(0 -lt (& $getSubnet).Count)
 

@@ -50,8 +50,8 @@ function New-CrdbNode {
 
     $getN = [scriptblock]{Get-EC2Instance @($n.Instances.InstanceId)}
     while((& $getN).Instances.State.Name -ne 'running'){
-        Write-Host "Awaiting startup of '$HostName'. Sleeping 5..." -ForegroundColor Yellow
-        Start-Sleep -Seconds 5
+        Write-Host "Awaiting startup of '$HostName'. Sleeping 10..." -ForegroundColor Yellow
+        Start-Sleep -Seconds 10
     } 
     Write-Host "$(Get-Date) : node '$HostName' reports running" -ForegroundColor Blue
 
@@ -60,8 +60,8 @@ function New-CrdbNode {
     
         do {   
             $i++
-            Write-Host "Awaiting sshd startup on EC2 instance $HostName. Sleeping 5..." -ForegroundColor Yellow
-            Start-Sleep -Seconds 5
+            Write-Host "Awaiting sshd startup on EC2 instance $HostName. Sleeping 10..." -ForegroundColor Yellow
+            Start-Sleep -Seconds 10
         } until ('alive' -eq (dsh -i $identFile -o ConnectTimeout=10 centos@$ip 'echo -n "alive"'))
     
         dsh -i $identFile centos@$ip "sudo hostnamectl set-hostname '$HostName'"

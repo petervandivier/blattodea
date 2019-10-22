@@ -39,8 +39,8 @@ foreach($node in ($n.Instances)){
 }
 
 while((& $getN).Instances.State.Name -ne 'running'){
-    Write-Host "Awaiting startup of $($btd_JumpBox.Name). Sleeping 5..." -ForegroundColor Yellow
-    Start-Sleep -Seconds 5
+    Write-Host "Awaiting startup of $($btd_JumpBox.Name). Sleeping 10..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 10
 } 
 
 foreach($node in (& $getN).Instances) {
@@ -52,8 +52,8 @@ foreach($node in (& $getN).Instances) {
             if(0 -eq ($i % 6)){ Write-Host "-- You may press ctrl+c to abort. This is the last step in make/jumpbox" -ForegroundColor Blue }
             $i++
 
-            Write-Host "Awaiting sshd startup on EC2 instance $nodeName. Sleeping 5..." -ForegroundColor Yellow
-            Start-Sleep -Seconds 5
+            Write-Host "Awaiting sshd startup on EC2 instance $nodeName. Sleeping 10..." -ForegroundColor Yellow
+            Start-Sleep -Seconds 10
         } until ('alive' -eq (dsh -i $sshKey -o ConnectTimeout=10 centos@$ip 'echo -n "alive"'))
     }
 
