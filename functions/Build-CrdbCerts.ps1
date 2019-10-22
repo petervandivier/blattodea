@@ -55,7 +55,9 @@ Node missing required elements. Certficate issuance skipped.
 # weirdly, -Force is a -NoClobber action here ¯\_(ツ)_/¯
 # it suppresses the error message & still returns the fully qualified path
         $CertsDir = (New-Item -Path $CertsDir -ItemType Directory -Force).FullName
-        
+        $getbinsh = Resolve-Path ./templates/initdb/getbin.sh
+        $initdbsh = Resolve-Path ./templates/initdb/initdb.sh
+
         Push-Location $CertsDir
         
         New-Item -Path certs             -ItemType Directory -Force
@@ -94,18 +96,20 @@ Node missing required elements. Certficate issuance skipped.
                 Invoke-Expression -Command $createCertCmd 
 
                 ($tmpSvcFile -f $node.PrivateIpAddress, $allIps) | Set-Content ./securecockroachdb.service -Force
-                dcp -i $identFile ./securecockroachdb.service centos@$PublicIpAddress`:~/
+                dcp -o ConnectTimeout=5 -i $identFile ./securecockroachdb.service centos@$PublicIpAddress`:~/
                 Remove-Item ./securecockroachdb.service
 
                 dsh -i $identFile -o ConnectTimeout=5 $User@$PublicIpAddress 'rm -rf certs; mkdir certs'
                 dcp -i $identFile -o ConnectTimeout=5 -r certs/ $User@$PublicIpAddress`:~/
-                dcp -i $identFile -o ConnectTimeout=5 ./templates/initdb/initdb.sh centos@$PublicIpAddress`:~/  
+                dcp -i $identFile -o ConnectTimeout=5 $initdbsh centos@$PublicIpAddress`:~/  
+                dcp -i $identFile -o ConnectTimeout=5 $getbinsh centos@$PublicIpAddress`:~/  
 
                 if($Clobber){
                     dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'chmod +x ./getbin.sh && sudo bash ./getbin.sh'
                     dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'chmod +x ./initdb.sh && sudo bash ./initdb.sh'
                     # ./initdb.sh only starts, force restart to clobber
                     dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'sudo systemctl restart securecockroachdb'
+                    dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'sudo systemctl daemon-reload'
                 }
                 
                 Get-ChildItem -Path certs/node* | Remove-Item
