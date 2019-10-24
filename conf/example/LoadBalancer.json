@@ -1,6 +1,6 @@
 {
     "IpAddressType": "ipv4",
-    "Name": "cockroachdb-lb",
+    "Name": "lb-crdb",
     "Scheme": "internal",
     "Type": "network"
 }

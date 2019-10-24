@@ -39,8 +39,8 @@ $cluster = Get-EC2Instance -InstanceId $cluster.Instances.InstanceId
 # Add-Member -InputObject $cluster -Name Sync -Value {$this = (Get-EC2Instance @($cluster.Instances.InstanceId))}
 
 $cluster.RunningInstance.InstanceId | ForEach-Object {
-    $i+=1
-    $name = $btd_Defaults.EC2.NamePattern -f $i
+    $script:i+=1
+    $name = $btd_Defaults.EC2.NamePattern -f ($i).ToString('00')
     New-EC2Tag -Resource $_ -Tag @([Amazon.EC2.Model.Tag]::new('Name',$name))
 }
 
@@ -61,8 +61,8 @@ $cluster  | ConvertTo-Json -Depth 10 | Set-Content ./conf/actual/Cluster.json -F
 $getEc2 = [scriptblock]{Get-EC2Instance @($cluster.Instances.InstanceId)}
 
 while((& $getEc2).Instances.State.Name -ne 'running'){
-    Write-Host "Awaiting startup of all EC2 instances. Sleeping 5..." -ForegroundColor Yellow
-    Start-Sleep -Seconds 5
+    Write-Host "Awaiting startup of all EC2 instances. Sleeping 10..." -ForegroundColor Yellow
+    Start-Sleep -Seconds 10
 } 
 
 Write-Host "$(Get-Date) : all nodes report running" -ForegroundColor Blue
@@ -80,8 +80,8 @@ foreach($node in $cluster.Instances) {
             if(0 -eq ($i % 6)){ Write-Host "-- You may press ctrl+c to abort. This is the last step in make/cluster" -ForegroundColor Blue }
             $i++
 
-            Write-Host "Awaiting sshd startup on EC2 instance $nodeName. Sleeping 5..." -ForegroundColor Yellow
-            Start-Sleep -Seconds 5
+            Write-Host "Awaiting sshd startup on EC2 instance $nodeName. Sleeping 10..." -ForegroundColor Yellow
+            Start-Sleep -Seconds 10
         } until ('alive' -eq (dsh -i $sshKey -o ConnectTimeout=10 centos@$ip 'echo -n "alive"'))
     }
 

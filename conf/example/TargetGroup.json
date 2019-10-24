@@ -4,6 +4,6 @@
     "HealthCheckProtocol": "http",
     "Port": 26257,
     "Protocol": "tcp",
-    "Name": "cockroachdb-tg",
+    "Name": "tg-crdb",
     "TargetType": "instance"
 }

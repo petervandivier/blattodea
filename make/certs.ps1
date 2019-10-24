@@ -3,6 +3,8 @@
 
 $elb = Get-Content -Path ./conf/actual/LoadBalancer.json | ConvertFrom-Json
 $ec2 = Get-Content -Path ./conf/actual/Cluster.json      | ConvertFrom-Json
+# allow $jb variable to be null for certs initialization
+$jb = Get-Content -Path ./conf/actual/JumpBox.json -ErrorAction SilentlyContinue | ConvertFrom-Json -ErrorAction SilentlyContinue
 
 $elbPublicIpAddress = (dig $elb.DNSName +short) -join ' '
 
@@ -43,7 +45,7 @@ foreach($node in $cluster.Instances){
         $PublicIpAddress       # 3 
         $elbPublicIpAddress    # 4 
         $elb.DNSName           # 5 
-        $null                  # 6 
+        $jb.Instances.PrivateIpAddress -join ' ' # 6 
     )
     Invoke-Expression -Command $createCertCmd 
 

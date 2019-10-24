@@ -1,0 +1,23 @@
+{
+    "AvailabilityZone":"eu-west-1a",
+    "Name":"crdbjump",
+    "EC2": {
+        "InstanceType":"t3a.large",
+        "Subnet":"eu-west-1a",
+        "Image":{
+            "Description": "community image with ENA support for t3a.large box",
+            "Link":"https://wiki.centos.org/Cloud/AWS",
+            "Query":[
+                "Get-EC2Image -Filter @(",
+                "@{Name='product-code';Values='aw0evgkw8e5c1q413zgy5pjce'},",
+                "@{Name='owner-id';Values='679593333241'}) |",
+                "Where EnaSupport |",
+                "Sort-Object -Property CreationDate -Descending | ",
+                "Select-Object -First 1;"
+            ]
+        }
+    },
+    "KeyPair": {
+        "Name":"cockroachdb"
+    }
+}
