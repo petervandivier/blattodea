@@ -1,8 +1,21 @@
 #!/usr/bin/env pwsh
 #Requires -Module blattodea
 
-$vpc = New-EC2Vpc -CidrBlock $btd_VPC.Primary.CidrBlock
-New-EC2Tag -ResourceId $vpc.VpcId -Tag $btd_VPC.Primary.Tags
+[CmdletBinding()]
+param (
+    [Parameter()]
+    # TODO: https://vexx32.github.io/2018/11/29/Dynamic-ValidateSet/
+    [ValidateSet('Default','Remote1')]
+    [string]
+    $Position = 'Default'
+)
+
+$PopRegion = (Get-DefaultAWSRegion).Region
+$PushRegion = $btd_VPC.$Position.Region
+Set-DefaultAWSRegion $PushRegion
+
+$vpc = New-EC2Vpc -CidrBlock $btd_VPC.$Position.CidrBlock
+New-EC2Tag -ResourceId $vpc.VpcId -Tag $btd_VPC.$Position.Tags
 New-EC2Tag -ResourceId $vpc.VpcId -Tag $btd_CommonTags.ToTagArray()
 $vpc = Get-EC2Vpc -VpcId $vpc.VpcId # do we need to refresh?
 $vpc | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/VPC.json -Force
@@ -26,3 +39,5 @@ Get-EC2NetworkAcl -Filter @{Name='vpc-id';Value=$vpc.VpcId} | ForEach-Object {
 # don't clobber tags for dhcp options sets shared by other VPCs
 # New-EC2Tag -ResourceId $vpc.DhcpOptionsId -Tag @{Key='Name';Value='dopt-crdb'}
 # New-EC2Tag -ResourceId $vpc.DhcpOptionsId -Tag $btd_CommonTags.ToTagArray()
+
+Set-DefaultAWSRegion $PopRegion
