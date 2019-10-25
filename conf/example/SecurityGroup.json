@@ -1,10 +1,10 @@
 {
   "Description": "security group for cockroachdb proof-of-concept",
-  "GroupName": "cockroachdb-sg",
+  "GroupName": "crdb",
   "Tags": [
     {
       "Key": "Name",
-      "Value": "cockroachdb-sg"
+      "Value": "crdb"
     }
   ]
 }

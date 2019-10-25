@@ -27,8 +27,6 @@ Import-Module ../blattodea
 . ./make-all.ps1
 ```
 
-> TODO: ENI, RTB, DOPT, ACL tags @ cluster
-
 ## Cleanup
 
 ```pwsh

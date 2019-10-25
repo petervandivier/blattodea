@@ -47,10 +47,14 @@ $cluster.RunningInstance.InstanceId | ForEach-Object {
 $cluster = Get-EC2Instance @($cluster.Instances.InstanceId)
 
 # copy instance tags to underlying volumes
+# foreach() mischief is done here to get the unique hostname applied to the volume(s) and network interface
 foreach($node in ($cluster.Instances)){
-    foreach($device in ($node.BlockDeviceMappings.Ebs.VolumeId)){
-        $node.Tags | ForEach-Object {
-            New-EC2Tag -Resource $device -Tag $_
+    $eni = Get-EC2NetworkInterface -Filter @{Name='attachment.instance-id';Value=$node.InstanceId}
+    foreach($tag in $node.Tags){
+        New-EC2Tag -Resource $eni.NetworkInterfaceId -Tag $tag
+
+        foreach($volume_id in ($node.BlockDeviceMappings.Ebs.VolumeId)) {
+            New-EC2Tag -Resource $volume_id -Tag $tag
         }
     }
 }
