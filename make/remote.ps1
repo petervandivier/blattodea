@@ -3,4 +3,4 @@
 
 . make/vpc 'Remote1'
 . make/subnet 'Remote1'
-
+. make/securitygroup 'Remote1'
