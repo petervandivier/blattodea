@@ -9,4 +9,5 @@ templates/initdb/securecockroachdb.service
 !/conf/actual/VPC.json
 !/conf/actual/Subnets.json
 !/conf/actual/IGW.json
+!/conf/actual/SecurityGroup.json
 .kitchen
