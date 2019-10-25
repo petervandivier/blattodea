@@ -5,7 +5,7 @@
         "Tags": [
             {
                 "Key": "Name",
-                "Value": "vpc-crdb"
+                "Value": "vpc-crdb-df"
             }
         ]
     },
@@ -15,7 +15,7 @@
         "Tags": [
             {
                 "Key": "Name",
-                "Value": "vpc-crdb"
+                "Value": "vpc-crdb-rm1"
             }
         ]
     }

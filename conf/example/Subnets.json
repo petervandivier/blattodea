@@ -1,32 +1,66 @@
-[
-  {
-    "AvailabilityZone": "us-east-2a",
-    "CidrBlock": "10.0.10.0/24",
-    "Tags": [
-      {
-        "Key": "Name",
-        "Value": "crdb-sn-2a"
-      }
-    ]
-  },
-  {
-    "AvailabilityZone": "us-east-2b",
-    "CidrBlock": "10.0.20.0/24",
-    "Tags": [
-      {
-        "Key": "Name",
-        "Value": "crdb-sn-2b"
-      }
-    ]
-  },
-  {
-    "AvailabilityZone": "us-east-2c",
-    "CidrBlock": "10.0.30.0/24",
-    "Tags": [
-      {
-        "Key": "Name",
-        "Value": "crdb-sn-2c"
-      }
-    ]
-  }
-]
+{
+  "Default": [
+    {
+      "AvailabilityZone": "us-east-2a",
+      "CidrBlock": "10.0.10.0/24",
+      "Tags": [
+        {
+          "Key": "Name",
+          "Value": "crdb-sn-df-2a"
+        }
+      ]
+    },
+    {
+      "AvailabilityZone": "us-east-2b",
+      "CidrBlock": "10.0.20.0/24",
+      "Tags": [
+        {
+          "Key": "Name",
+          "Value": "crdb-sn-df-2b"
+        }
+      ]
+    },
+    {
+      "AvailabilityZone": "us-east-2c",
+      "CidrBlock": "10.0.30.0/24",
+      "Tags": [
+        {
+          "Key": "Name",
+          "Value": "crdb-sn-df-2c"
+        }
+      ]
+    }
+  ],
+  "Remote1": [
+    {
+      "AvailabilityZone": "eu-west-1a",
+      "CidrBlock": "172.16.10.0/24",
+      "Tags": [
+        {
+          "Key": "Name",
+          "Value": "crdb-sn-rm1-1a"
+        }
+      ]
+    },
+    {
+      "AvailabilityZone": "eu-west-1b",
+      "CidrBlock": "172.16.20.0/24",
+      "Tags": [
+        {
+          "Key": "Name",
+          "Value": "crdb-sn-rm1-1b"
+        }
+      ]
+    },
+    {
+      "AvailabilityZone": "eu-west-1c",
+      "CidrBlock": "172.16.30.0/24",
+      "Tags": [
+        {
+          "Key": "Name",
+          "Value": "crdb-sn-rm1-1c"
+        }
+      ]
+    }
+  ]
+}

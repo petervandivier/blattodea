@@ -8,4 +8,5 @@ conf/actual/*
 templates/initdb/securecockroachdb.service
 !/conf/actual/VPC.json
 !/conf/actual/Subnets.json
+!/conf/actual/IGW.json
 .kitchen
