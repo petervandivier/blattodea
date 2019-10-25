@@ -22,5 +22,7 @@ Get-EC2NetworkAcl -Filter @{Name='vpc-id';Value=$vpc.VpcId} | ForEach-Object {
     New-EC2Tag -ResourceId $_.NetworkAclId -Tag $btd_CommonTags.ToTagArray()
 }
 
-New-EC2Tag -ResourceId $vpc.DhcpOptionsId -Tag @{Key='Name';Value='dopt-crdb'}
-New-EC2Tag -ResourceId $vpc.DhcpOptionsId -Tag $btd_CommonTags.ToTagArray()
+# we're just using the default dchp options set at this time
+# don't clobber tags for dhcp options sets shared by other VPCs
+# New-EC2Tag -ResourceId $vpc.DhcpOptionsId -Tag @{Key='Name';Value='dopt-crdb'}
+# New-EC2Tag -ResourceId $vpc.DhcpOptionsId -Tag $btd_CommonTags.ToTagArray()
