@@ -6,4 +6,6 @@ conf/target/*
 conf/actual/*
 !conf/actual/README.md
 templates/initdb/securecockroachdb.service
+!/conf/actual/VPC.json
+!/conf/actual/Subnets.json
 .kitchen

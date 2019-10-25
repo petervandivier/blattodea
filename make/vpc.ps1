@@ -18,7 +18,7 @@ $vpc = New-EC2Vpc -CidrBlock $btd_VPC.$Position.CidrBlock
 New-EC2Tag -ResourceId $vpc.VpcId -Tag $btd_VPC.$Position.Tags
 New-EC2Tag -ResourceId $vpc.VpcId -Tag $btd_CommonTags.ToTagArray()
 $vpc = Get-EC2Vpc -VpcId $vpc.VpcId # do we need to refresh?
-$vpc | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/VPC.json -Force
+$vpc | ConvertTo-Json -Depth 5 | Set-Content "./conf/actual/VPC.$Position.json" -Force
 
 Get-EC2SecurityGroup -Filter @{Name='vpc-id';Value=$vpc.VpcId} | ForEach-Object {
     New-EC2Tag -ResourceId $_.GroupId -Tag @{Key='Name';Value='sg-vpc-crdb-default'}
