@@ -1,8 +1,8 @@
 #!/usr/bin/env pwsh
 #Requires -Module blattodea
 
-$vpc = New-EC2Vpc -CidrBlock $btd_VPC.CidrBlock
-New-EC2Tag -ResourceId $vpc.VpcId -Tag $btd_Defaults.VPC.Tags
+$vpc = New-EC2Vpc -CidrBlock $btd_VPC.Primary.CidrBlock
+New-EC2Tag -ResourceId $vpc.VpcId -Tag $btd_VPC.Primary.Tags
 New-EC2Tag -ResourceId $vpc.VpcId -Tag $btd_CommonTags.ToTagArray()
 $vpc = Get-EC2Vpc -VpcId $vpc.VpcId # do we need to refresh?
 $vpc | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/VPC.json -Force

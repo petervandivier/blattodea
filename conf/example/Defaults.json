@@ -21,13 +21,5 @@
         "Name":"cockroachdb",
         "BringYourOwn":false
     },
-    "CertsDirectory":"./conf/secret/.cockroachdb-certs",
-    "VPC": {
-        "Tags": [
-            {
-              "Key": "Name",
-              "Value": "vpc-crdb"
-            }
-        ]
-    }
+    "CertsDirectory":"./conf/secret/.cockroachdb-certs"
 }
