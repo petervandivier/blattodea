@@ -1,9 +1,9 @@
 {
-    "AvailabilityZone":"eu-west-1a",
+    "AvailabilityZone":"us-east-2a",
     "Name":"crdbjump",
     "EC2": {
         "InstanceType":"t3a.large",
-        "Subnet":"eu-west-1a",
+        "Subnet":"us-east-2a",
         "Image":{
             "Description": "community image with ENA support for t3a.large box",
             "Link":"https://wiki.centos.org/Cloud/AWS",

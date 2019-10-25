@@ -1,5 +1,5 @@
 {
-    "Primary":{
+    "Default":{
         "Region":"us-east-2",
         "CidrBlock": "10.0.0.0/16",
         "Tags": [
@@ -9,7 +9,7 @@
             }
         ]
     },
-    "Secondary":{
+    "Remote1":{
         "Region":"eu-west-1",
         "CidrBlock": "172.16.0.0/16",
         "Tags": [
