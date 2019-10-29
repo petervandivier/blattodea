@@ -96,20 +96,21 @@ Node missing required elements. Certficate issuance skipped.
                 Invoke-Expression -Command $createCertCmd 
 
                 ($tmpSvcFile -f $node.PrivateIpAddress, $allIps) | Set-Content ./securecockroachdb.service -Force
-                dcp -o ConnectTimeout=5 -i $identFile ./securecockroachdb.service centos@$PublicIpAddress`:~/
+                dcp -o ConnectTimeout=5 -i $identFile ./securecockroachdb.service $User@$PublicIpAddress`:~/
                 Remove-Item ./securecockroachdb.service
 
                 dsh -i $identFile -o ConnectTimeout=5 $User@$PublicIpAddress 'rm -rf certs; mkdir certs'
                 dcp -i $identFile -o ConnectTimeout=5 -r certs/ $User@$PublicIpAddress`:~/
-                dcp -i $identFile -o ConnectTimeout=5 $initdbsh centos@$PublicIpAddress`:~/  
-                dcp -i $identFile -o ConnectTimeout=5 $getbinsh centos@$PublicIpAddress`:~/  
+                dcp -i $identFile -o ConnectTimeout=5 $initdbsh $User@$PublicIpAddress`:~/  
+                dcp -i $identFile -o ConnectTimeout=5 $getbinsh $User@$PublicIpAddress`:~/  
 
                 if($Clobber){
-                    dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'chmod +x ./getbin.sh && sudo bash ./getbin.sh'
-                    dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'chmod +x ./initdb.sh && sudo bash ./initdb.sh'
+                    dsh -i $identFile -o ConnectTimeout=5 $User@$PublicIpAddress 'chmod +x ./getbin.sh && sudo bash ./getbin.sh'
+                    dsh -i $identFile -o ConnectTimeout=5 $User@$PublicIpAddress 'chmod +x ./initdb.sh && sudo bash ./initdb.sh'
                     # ./initdb.sh only starts, force restart to clobber
-                    dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'sudo systemctl restart securecockroachdb'
-                    dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'sudo systemctl daemon-reload'
+                    # restart needed? or is `daemon-reload` sufficient by itself?
+                    dsh -i $identFile -o ConnectTimeout=5 $User@$PublicIpAddress 'sudo systemctl restart securecockroachdb'
+                    dsh -i $identFile -o ConnectTimeout=5 $User@$PublicIpAddress 'sudo systemctl daemon-reload'
                 }
                 
                 Get-ChildItem -Path certs/node* | Remove-Item

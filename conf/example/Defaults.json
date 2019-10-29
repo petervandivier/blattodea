@@ -5,6 +5,7 @@
         "NamePattern":"crdb{0}",
         "InstanceType":"t3a.large",
         "Image":{
+            "DefaultUser":"centos",
             "Description":"most recently available aws marketplace community ami centos image",
             "Query":[
                 "Get-EC2Image -Filter @(",
