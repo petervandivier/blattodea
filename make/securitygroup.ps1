@@ -32,7 +32,7 @@ $rtb = Get-EC2RouteTable -Filter @{Name='vpc-id';Values=$vpc.VpcId}
 New-EC2Tag -ResourceId $rtb.RouteTableId -Tag $btd_CommonTags.ToTagArray()
 New-EC2Route -RouteTableId $rtb.RouteTableId -GatewayId $igw.InternetGatewayId -DestinationCidrBlock '0.0.0.0/0' | Out-Null 
 
-Get-EC2RouteTable -RouteTableId $rtb.RouteTableId | Set-Content "./conf/actual/RTB.$Position.json" -Force
+Get-EC2RouteTable -RouteTableId $rtb.RouteTableId | ConvertTo-Json -Depth 5 | Set-Content "./conf/actual/RTB.$Position.json" -Force
 
 Get-EC2SecurityGroup $sg_id | ConvertTo-Json -Depth 5 | Set-Content "./conf/actual/SecurityGroup.$Position.json" -Force
 
