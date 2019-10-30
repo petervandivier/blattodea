@@ -10,19 +10,23 @@ $acceptVpc  = Get-Content "./conf/actual/VPC.$acceptPosition.json"  | ConvertFro
 $requestVpc = Get-Content "./conf/actual/VPC.$requestPosition.json" | ConvertFrom-Json 
 
 $peerSplat = @{
-    Region      = $btd_VPC.$requestPosition.Region
+    #Region      = $btd_VPC.$requestPosition.Region
     VpcId       = $requestVpc.VpcId
     PeerVpcId   = $acceptVpc.VpcId
     PeerOwnerId = $acceptVpc.OwnerId
     PeerRegion  = $btd_VPC.$acceptPosition.Region
 }
 $peer = New-EC2VpcPeeringConnection @peerSplat -Verbose 
+# TODO: tag:common & tag:name requester & accepter
 
-Start-Sleep -Seconds 2 -Verbose
+# TODO: await() this shit properly
+Start-Sleep -Seconds 5 
 
 Approve-EC2VpcPeeringConnection -VpcPeeringConnectionId $peer.VpcPeeringConnectionId -Region $btd_VPC.$acceptPosition.Region -Verbose
 
-$peer = Get-EC2VpcPeeringConnection -VpcPeeringConnectionId $peer.VpcPeeringConnectionId
+Start-Sleep -Seconds 5 
+
+$peer = Get-EC2VpcPeeringConnection -VpcPeeringConnectionId $peer.VpcPeeringConnectionId 
 
 $acceptRtb  = Get-Content "./conf/actual/RTB.$acceptPosition.json"  | ConvertFrom-Json
 $requestRtb = Get-Content "./conf/actual/RTB.$requestPosition.json" | ConvertFrom-Json
@@ -50,7 +54,9 @@ $script:requestSg = Get-Content "./conf/actual/SecurityGroup.$requestPosition.js
 $acceptSg  = Get-EC2SecurityGroup -GroupId $acceptSg.GroupId  -Region $peer.AccepterVpcInfo.Region
 $requestSg = Get-EC2SecurityGroup -GroupId $requestSg.GroupId -Region $peer.RequesterVpcInfo.Region
 
-foreach($port in @(80,8080,26257,22)){
+# Need to troubleshoot re-grant on destroy/peering for port 80 if we want to grant it here
+# just excluding port 80 from peering for the moment
+foreach($port in @(8080,26257,22)){
     $perm = [Amazon.EC2.Model.IpPermission]@{
         IpProtocol = 'tcp'
         FromPort = $port
@@ -63,7 +69,7 @@ foreach($port in @(80,8080,26257,22)){
 }
 # TODO: allow ping
 
-foreach($port in @(80,8080,26257,22)){
+foreach($port in @(8080,26257,22)){
     $perm = [Amazon.EC2.Model.IpPermission]@{
         IpProtocol = 'tcp'
         FromPort = $port

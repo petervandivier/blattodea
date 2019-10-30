@@ -16,16 +16,19 @@ $script:requestPosition = 'Default'
 $script:acceptRtb  = Get-Content "./conf/actual/RTB.$acceptPosition.json"  | ConvertFrom-Json
 $script:requestRtb = Get-Content "./conf/actual/RTB.$requestPosition.json" | ConvertFrom-Json
 
+$requestCidr = $peer.RequesterVpcInfo.CidrBlock
+$acceptCidr = $peer.AccepterVpcInfo.CidrBlock
+
 # TODO: ¿check for status:Blackhole first? 
 Remove-EC2Route `
     -RouteTableId $requestRtb.RouteTableId `
-    -DestinationCidrBlock $peer.AccepterVpcInfo.CidrBlock `
+    -DestinationCidrBlock $acceptCidr `
     -Region $peer.RequesterVpcInfo.Region `
     -Confirm:$false
 
 Remove-EC2Route `
     -RouteTableId $acceptRtb.RouteTableId `
-    -DestinationCidrBlock $peer.RequesterVpcInfo.CidrBlock `
+    -DestinationCidrBlock $requestCidr `
     -Region $peer.AccepterVpcInfo.Region `
     -Confirm:$false
 
@@ -35,20 +38,34 @@ $script:requestSg = Get-Content "./conf/actual/SecurityGroup.$requestPosition.js
 $acceptSg  = Get-EC2SecurityGroup -GroupId $acceptSg.GroupId  -Region $peer.AccepterVpcInfo.Region
 $requestSg = Get-EC2SecurityGroup -GroupId $requestSg.GroupId -Region $peer.RequesterVpcInfo.Region
 
-# TODO: better filter handling for perms wipe
+# need to troubleshoot re-grant for port 80 if we allow cross-region traffic on 80
+# just removing 80 from peering config for the moment
+foreach($perm in ($acceptSg.IpPermission | Where-Object {$_.IpRange -contains $requestCidr})){
+    Revoke-EC2SecurityGroupIngress `
+        -GroupId $acceptSg.GroupId `
+        -Region $peer.AccepterVpcInfo.Region `
+        -IpPermission $perm 
 
-# foreach($perm in ($acceptSg.IpPermission | Where-Object {$_.IpRange -eq $peer.RequesterVpcInfo.CidrBlock})){
-#     Revoke-EC2SecurityGroupIngress `
-#         -GroupId $acceptSg.GroupId `
-#         -Region $peer.AccepterVpcInfo.Region `
-#         -IpPermission $perm `
-#         -Verbose
-# }
+    $perm.IpRange.Remove($requestCidr) | Out-Null # IpRanges <=> IpRange
+    $perm.Ipv4Ranges = $perm.Ipv4Ranges | Where-Object CidrIp -ne $requestCidr
 
-# foreach($perm in ($requestSg.IpPermission | Where-Object {$_.IpRange -eq $peer.AccepterVpcInfo.CidrBlock})){
-#     Revoke-EC2SecurityGroupIngress `
-#         -GroupId $requestSg.GroupId `
-#         -Region $peer.RequesterVpcInfo.Region `
-#         -IpPermission $perm `
-#         -Verbose
-# }
+    Grant-EC2SecurityGroupIngress `
+        -GroupId $acceptSg.GroupId `
+        -Region $peer.AccepterVpcInfo.Region `
+        -IpPermission $perm 
+}
+
+foreach($perm in ($requestSg.IpPermission | Where-Object {$_.IpRange -contains $acceptCidr})){
+    Revoke-EC2SecurityGroupIngress `
+        -GroupId $requestSg.GroupId `
+        -Region $peer.RequesterVpcInfo.Region `
+        -IpPermission $perm 
+
+    $perm.IpRange.Remove($acceptCidr) | Out-Null
+    $perm.Ipv4Ranges = $perm.Ipv4Ranges | Where-Object CidrIp -ne $acceptCidr
+    
+    Grant-EC2SecurityGroupIngress `
+        -GroupId $requestSg.GroupId `
+        -Region $peer.RequestVpcInfo.Region `
+        -IpPermission $perm 
+}
