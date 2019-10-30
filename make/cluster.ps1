@@ -1,15 +1,28 @@
 #!/usr/bin/env pwsh
 #Requires -Module blattodea
 
-$subnets = Get-Content ./conf/actual/Subnets.json | ConvertFrom-Json
-$sg_id = (Get-Content ./conf/actual/SecurityGroup.json | ConvertFrom-Json).GroupId
-$kp = Get-Content ./conf/actual/KeyPair.json | ConvertFrom-Json
+[CmdletBinding()]
+param (
+    [Parameter()]
+    # TODO: https://vexx32.github.io/2018/11/29/Dynamic-ValidateSet/
+    [ValidateSet('Default','Remote1')]
+    [string]
+    $Position = 'Default'
+)
 
-$sshKey = Resolve-Path "./conf/secret/$($kp.KeyName).pem"
+$PopRegion = (Get-DefaultAWSRegion).Region
+$PushRegion = $btd_VPC.$Position.Region
+Set-DefaultAWSRegion $PushRegion
+
+$subnets = Get-Content "./conf/actual/Subnets.$Position.json" | ConvertFrom-Json
+$sg_id = (Get-Content "./conf/actual/SecurityGroup.$Position.json" | ConvertFrom-Json).GroupId
+$kp = Get-Content "./conf/actual/KeyPair.json" | ConvertFrom-Json
+
+$identFile = Resolve-Path "./conf/secret/$($kp.KeyName).pem"
 
 # ⸘ImageIds vary between regions for the same image‽ 
 $ami = Invoke-Expression ($btd_Defaults.EC2.Image.Query -join '')
-$ami | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/AMI.json -Force
+$ami | ConvertTo-Json -Depth 5 | Set-Content "./conf/actual/AMI.$Position.json" -Force
 
 $image_splat = @{
     AssociatePublicIp = $true # TODO: deploy config via user data and rm public IP
@@ -40,6 +53,7 @@ $cluster = Get-EC2Instance -InstanceId $cluster.Instances.InstanceId
 
 $cluster.RunningInstance.InstanceId | ForEach-Object {
     $script:i+=1
+# TODO: ¿instances nums max+1 for remote?
     $name = $btd_Defaults.EC2.NamePattern -f ($i).ToString('00')
     New-EC2Tag -Resource $_ -Tag @([Amazon.EC2.Model.Tag]::new('Name',$name))
 }
@@ -60,7 +74,7 @@ foreach($node in ($cluster.Instances)){
 }
 
 $cluster = Get-EC2Instance @($cluster.Instances.InstanceId)
-$cluster  | ConvertTo-Json -Depth 10 | Set-Content ./conf/actual/Cluster.json -Force
+$cluster  | ConvertTo-Json -Depth 10 | Set-Content "./conf/actual/Cluster.$Position.json" -Force
 
 $getEc2 = [scriptblock]{Get-EC2Instance @($cluster.Instances.InstanceId)}
 
@@ -73,24 +87,27 @@ Write-Host "$(Get-Date) : all nodes report running" -ForegroundColor Blue
 
 $cluster = (& $getEc2)
 
-$cluster  | ConvertTo-Json -Depth 10 | Set-Content ./conf/actual/Cluster.json -Force
+$cluster  | ConvertTo-Json -Depth 10 | Set-Content "./conf/actual/Cluster.$Position.json" -Force
 
 foreach($node in $cluster.Instances) {
     $nodeName = ($node.Tags | Where-Object Key -eq Name).Value
     $ip = $node.PublicIpAddress
+    $user = $btd_Defaults.EC2.Image.DefaultUser
 
-    if('alive' -ne (dsh -i $sshKey -o ConnectTimeout=10 centos@$ip 'echo -n "alive"')){
+    if('alive' -ne (dsh -i $identFile -o ConnectTimeout=10 $user@$ip 'echo -n "alive"')){
         do {   
             if(0 -eq ($i % 6)){ Write-Host "-- You may press ctrl+c to abort. This is the last step in make/cluster" -ForegroundColor Blue }
             $i++
 
-            Write-Host "Awaiting sshd startup on EC2 instance $nodeName. Sleeping 10..." -ForegroundColor Yellow
+            Write-Host "Awaiting sshd startup on EC2 instance '$nodeName' in region '$StoredAWSRegion'. Sleeping 10..." -ForegroundColor Yellow
             Start-Sleep -Seconds 10
-        } until ('alive' -eq (dsh -i $sshKey -o ConnectTimeout=10 centos@$ip 'echo -n "alive"'))
+        } until ('alive' -eq (dsh -i $identFile -o ConnectTimeout=10 $user@$ip 'echo -n "alive"'))
     }
 
-    dsh -i $sshKey centos@$ip "sudo hostnamectl set-hostname '$($nodeName)'"
+    dsh -i $identFile $user@$ip "sudo hostnamectl set-hostname '$($nodeName)'"
 # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/set-time.html
-    dcp -i $sshKey ./templates/default/mk-chrony.sh "centos@$ip`:/tmp/"
-    dsh -i $sshKey centos@$ip 'sudo /tmp/mk-chrony.sh'
+    dcp -i $identFile ./templates/default/mk-chrony.sh "$user@$ip`:/tmp/"
+    dsh -i $identFile $user@$ip 'sudo /tmp/mk-chrony.sh'
 }
+
+Set-DefaultAWSRegion $PopRegion

@@ -10,4 +10,6 @@ templates/initdb/securecockroachdb.service
 !/conf/actual/Subnets.json
 !/conf/actual/IGW.json
 !/conf/actual/SecurityGroup.json
+!/conf/actual/AMI.json
+!/conf/actual/Cluster.json
 .kitchen
