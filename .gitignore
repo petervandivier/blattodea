@@ -1,15 +1,25 @@
+
 .DS_Store
+
 conf/secret/*
 !conf/secret/*example*
 conf/target/*
 !conf/target/README.md
 conf/actual/*
 !conf/actual/README.md
-templates/initdb/securecockroachdb.service
+
+# monkey-patch symlinks for remote/multi-VPC refactor
 !/conf/actual/VPC.json
 !/conf/actual/Subnets.json
 !/conf/actual/IGW.json
 !/conf/actual/SecurityGroup.json
 !/conf/actual/AMI.json
 !/conf/actual/Cluster.json
+!/conf/actual/LoadBalancer.json
+!/conf/actual/TargetGroup.json
+!/conf/actual/Listener.json
+
+# service.tmp file formatted locally for scp
+templates/initdb/securecockroachdb.service
+
 .kitchen

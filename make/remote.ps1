@@ -6,3 +6,6 @@
 ./make/securitygroup Remote1
 ./make/keypair Remote1
 ./make/cluster Remote1
+./make/loadbalancer Remote1
+# ./make/certs ?
+

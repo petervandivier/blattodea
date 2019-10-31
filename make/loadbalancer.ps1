@@ -1,9 +1,30 @@
 #!/usr/bin/env pwsh
 #Requires -Module blattodea
 
-$vpc = Get-Content ./conf/actual/VPC.json     | ConvertFrom-Json
-$sn  = Get-Content ./conf/actual/Subnets.json | ConvertFrom-Json
-$ec2 = Get-Content ./conf/actual/Cluster.json | ConvertFrom-Json
+# TODO: fix the load balancer entirely
+#   none of the targets have actually registered healthy yet afaik
+# how does having one load-balancer per-region actually help?
+#   do the app hosts target the nearest LB? 🤔🤷‍
+
+[CmdletBinding()]
+param (
+    [Parameter()]
+    # TODO: https://vexx32.github.io/2018/11/29/Dynamic-ValidateSet/
+    [ValidateSet('Default','Remote1')]
+    [string]
+    $Position = 'Default',
+    [Parameter()]
+    [switch]
+    $JumpBox
+)
+
+$PopRegion = (Get-DefaultAWSRegion).Region
+$PushRegion = $btd_VPC.$Position.Region
+Set-DefaultAWSRegion $PushRegion
+
+$vpc = Get-Content "./conf/actual/VPC.$Position.json"     | ConvertFrom-Json
+$sn  = Get-Content "./conf/actual/Subnets.$Position.json" | ConvertFrom-Json
+$ec2 = Get-Content "./conf/actual/Cluster.$Position.json" | ConvertFrom-Json
 
 $LoadBalancer = @{
     IpAddressType = $btd_LoadBalancer.IpAddressType 
@@ -49,8 +70,8 @@ $lbl = New-ELB2Listener @Listener
 # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/iam-roles-for-amazon-ec2.html#create-iam-role-console
 # ¿TODO: re-bundle EC2 instance to AMI?
 
-$elb | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/LoadBalancer.json -Force
-$tg  | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/TargetGroup.json  -Force
-$lbl | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/Listener.json     -Force
+$elb | ConvertTo-Json -Depth 5 | Set-Content "./conf/actual/LoadBalancer.$Position.json" -Force
+$tg  | ConvertTo-Json -Depth 5 | Set-Content "./conf/actual/TargetGroup.$Position.json"  -Force
+$lbl | ConvertTo-Json -Depth 5 | Set-Content "./conf/actual/Listener.$Position.json"     -Force
 
-
+Set-DefaultAWSRegion $PopRegion
