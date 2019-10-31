@@ -17,17 +17,31 @@ function New-CrdbNode {
         [string]$AvailabilityZone # assuming one subnet per AZ i guess
     )
 
-    $subnet = Get-Content ./conf/actual/Subnets.json | ConvertFrom-Json | 
+    # https://superuser.com/a/615808/457020
+    # https://stackoverflow.com/a/9113746/4709762
+    $Region = [regex]::match($AvailabilityZone,'^(.*).$').Groups[1].Value
+    $Position = ($btd_VPC.PSObject.Properties | Where-Object {$_.Value.Region -eq $Region}).Name
+
+    if($null -eq $Position){
+        Write-Error "Position not found for given AZ '$AvailabilityZone'."
+        return;
+    }
+
+    $PopRegion = $StoredAWSRegion
+    $PushRegion = $Region
+    Set-DefaultAWSRegion $PushRegion
+
+    $subnet = Get-Content "./conf/actual/Subnets.$Position.json" | ConvertFrom-Json | 
         ForEach-Object { $PSItem } | # `ForEach-Object` is required to unwrap the array for `-eq` eval
         Where-Object {$_.AvailabilityZone -eq $AvailabilityZone}
-    $sg_id = (Get-Content ./conf/actual/SecurityGroup.json | ConvertFrom-Json).GroupId
-    $kp = Get-Content ./conf/actual/KeyPair.json | ConvertFrom-Json
+    $sg_id = (Get-Content "./conf/actual/SecurityGroup.$Position.json" | ConvertFrom-Json).GroupId
+    $kp = Get-Content "./conf/actual/KeyPair.json" | ConvertFrom-Json
     $identFile = Resolve-Path "./conf/secret/$($kp.KeyName).pem"
-    $ec2 = Get-Content -Path ./conf/actual/Cluster.json | ConvertFrom-Json
-    $elb = Get-Content -Path ./conf/actual/LoadBalancer.json | ConvertFrom-Json
+    $ec2 = Get-Content -Path "./conf/actual/Cluster.$Position.json" | ConvertFrom-Json
+    # $elb = Get-Content -Path "./conf/actual/LoadBalancer.$Position.json" | ConvertFrom-Json
 
     $ami = Invoke-Expression ($btd_Defaults.EC2.Image.Query -join '')
-    $ami | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/AMI.json -Force
+    $ami | ConvertTo-Json -Depth 5 | Set-Content "./conf/actual/AMI.$Position.json" -Force
 
     $image_splat = @{
         AssociatePublicIp = $true # TODO: deploy config via user data and rm public IP
@@ -73,7 +87,7 @@ function New-CrdbNode {
 
     $getEc2 = [scriptblock]{Get-EC2Instance (@($n.Instances.InstanceId) + $ec2.Instances.InstanceId)}
     $cluster = (& $getEc2)
-    $cluster | ConvertTo-Json -Depth 10 | Set-Content ./conf/actual/Cluster.json -Force
+    $cluster | ConvertTo-Json -Depth 10 | Set-Content "./conf/actual/Cluster.$Position.json" -Force
 
     $allIps = ($cluster.Instances.PrivateIpAddress) -join ','
     $PrivateIpAddress = $n.Instances[0].PrivateIpAddress
@@ -84,13 +98,22 @@ function New-CrdbNode {
     dcp -i $identFile ./templates/initdb/securecockroachdb.service centos@$PublicIpAddress`:~/
     Remove-Item ./templates/initdb/securecockroachdb.service
 
-    $splat = @{
-        Cluster      = $cluster.Instances
-        LoadBalancer = $elb
-        CertsDir     = Resolve-Path ($btd_Defaults.CertsDirectory)
-        OtherNames   = [string]$null
-        Clobber      = $true # clobber forces restart
+    $OtherNames = ''
+    $OtherNames += foreach($region in $btd_VPC.PSObject.Properties.Value.Region){
+        "*.elb.$region.amazonaws.com"
     }
-    Build-CrdbCerts @splat   
+    $OtherNames = $OtherNames -join ' '
+
+    # ./make/certs ?
+    $splat = @{
+        Cluster      = (Get-ChildItem "./conf/actual/Cluster.*.json" | Get-Content -Raw | ForEach-Object{ ConvertFrom-Json $_}).Instances
+        LoadBalancer = (Get-ChildItem "./conf/actual/LoadBalancer.*.json" | Get-Content -Raw | ForEach-Object{ ConvertFrom-Json $_})
+        CertsDir     = $btd_Defaults.CertsDirectory
+        OtherNames   = $OtherNames
+        Clobber      = $true
+    }
+    Build-CrdbCerts @splat 
+
+    Set-DefaultAWSRegion $PopRegion
 }
 

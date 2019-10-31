@@ -71,13 +71,21 @@ Node missing required elements. Certficate issuance skipped.
             cockroach cert create-ca --certs-dir=certs --ca-key=my-safe-directory/ca.key
         }
 
-        $elbPublicIpAddress = (dig $LoadBalancer.DNSName +short) -join ' '
+        $elbPublicIpAddress = ' '
+        $LoadBalancer_DNSName = $LoadBalancer.DNSName -join ' '
+        foreach($lb in $LoadBalancer){
+            $elbPublicIpAddress += (dig $lb.DNSName +short) -join ' '
+        }
 
         $createCertCmdTemplate = "cockroach cert create-node {0} {1} {2} {3} localhost 127.0.0.1 {4} {5} {6} --certs-dir=certs --ca-key=my-safe-directory/ca.key"
+    
+        $i = 0
     }
 
     process{
         foreach($node in $cluster){
+            $i +=1
+            Write-Host $i -ForegroundColor Green
             $identFile = (Resolve-Path "$IdentFileDir/$($node.KeyName).pem").Path
             $PublicIpAddress = $node.PublicIpAddress
 
@@ -90,7 +98,7 @@ Node missing required elements. Certficate issuance skipped.
                     $node.PrivateDnsName   # 2 
                     $PublicIpAddress       # 3 
                     $elbPublicIpAddress    # 4 
-                    $LoadBalancer.DNSName  # 5 
+                    $LoadBalancer_DNSName  # 5 
                     $OtherNames            # 6 
                 )
                 Invoke-Expression -Command $createCertCmd 
