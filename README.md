@@ -35,5 +35,7 @@ Import-Module ../blattodea
 . ./destroy-all.ps1
 ```
 
+**Note:** The find-destroy logic is buggy atm, so check termination protection on boxes you care about
+
 [1]: https://docs.aws.amazon.com/powershell/latest/reference/
 [2]: https://www.cockroachlabs.com/docs/stable/deploy-cockroachdb-on-aws.html

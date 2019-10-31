@@ -20,6 +20,11 @@ $jb  = (Get-Content "./conf/actual/JumpBox.$Position.json" -ErrorAction Silently
 # Get-EC2Instance barfs on not-found InstancesIds, hence this handling
 $getEc2 = [scriptblock]{ (@($ec2.InstanceId + $jb.InstanceId) | Test-EC2Instance | Where-Object Exists).InstanceId | Get-EC2Instance }
 
+if((& $getEc2).Count -gt ($ec2.Count + $jb.Count)){
+    Write-Error "Looks like you're fixin' to terminate someone else's instances, maybe chill with that."
+    return;
+}
+
 & $getEc2 | Remove-EC2Instance -Confirm:$false 
 
 if(& $getEc2){
