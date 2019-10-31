@@ -1,10 +1,18 @@
 #!/usr/bin/env pwsh
 #Requires -Module blattodea
 
+[CmdletBinding()]
+param (
+    [Parameter()]
+    [switch]
+    $JumpBox
+)
+
 $elb = Get-Content -Path ./conf/actual/LoadBalancer.json | ConvertFrom-Json
 $ec2 = Get-Content -Path ./conf/actual/Cluster.json      | ConvertFrom-Json
 # allow $jb variable to be null for certs initialization
-$jb = Get-Content -Path ./conf/actual/JumpBox.json -ErrorAction SilentlyContinue | ConvertFrom-Json -ErrorAction SilentlyContinue
+$jb = $null
+if($JumpBox){$jb = Get-Content -Path ./conf/actual/JumpBox.json -ErrorAction SilentlyContinue | ConvertFrom-Json}
 
 $elbPublicIpAddress = (dig $elb.DNSName +short) -join ' '
 

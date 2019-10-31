@@ -15,9 +15,10 @@ Set-DefaultAWSRegion $PushRegion
 
 $ec2 = (Get-Content "./conf/actual/Cluster.$Position.json" | ConvertFrom-Json).Instances
 # TODO: handle jumpbox better
-if($Position -eq 'Default'){$jh  = (Get-Content "./conf/actual/JumpBox.json" | ConvertFrom-Json).Instances}
+$jb  = (Get-Content "./conf/actual/JumpBox.$Position.json" -ErrorAction SilentlyContinue | ConvertFrom-Json).Instances
 
-$getEc2 = [scriptblock]{Get-EC2Instance @($ec2.InstanceId + $jh.InstanceId)}
+# Get-EC2Instance barfs on not-found InstancesIds, hence this handling
+$getEc2 = [scriptblock]{ (@($ec2.InstanceId + $jb.InstanceId) | Test-EC2Instance | Where-Object Exists).InstanceId | Get-EC2Instance }
 
 & $getEc2 | Remove-EC2Instance -Confirm:$false 
 

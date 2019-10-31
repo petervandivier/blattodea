@@ -7,7 +7,10 @@ param (
     # TODO: https://vexx32.github.io/2018/11/29/Dynamic-ValidateSet/
     [ValidateSet('Default','Remote1')]
     [string]
-    $Position = 'Default'
+    $Position = 'Default',
+    [Parameter()]
+    [switch]
+    $JumpBox
 )
 
 $PopRegion = (Get-DefaultAWSRegion).Region
