@@ -35,11 +35,9 @@ function Reset-CrdbAdminIngress {
         Write-Verbose "Count of permissions to be modified: '$($permSet.Count)'"
 
         foreach($perm in $permSet){
-            Set-Variable -Name perm -Option ReadOnly
-            # $perm | ConvertTo-Json -Depth 5 | jq 
-
+            # TODO: do not copy the entire object or strip typing
+            #   see ./.local/vexx32-Reset-CrdbAdminIngress.txt for suggestion details
             New-Variable -Name newPerm -Value ($perm | ConvertTo-Json -Depth 10 | ConvertFrom-Json) -Force
-            # $perm | ConvertTo-Json -Depth 5 | jq 
 
             $oldCidr = ($perm.IpV4Ranges | Where-Object {$_.Description -like "*$user*"}).CidrIp
 
@@ -64,7 +62,6 @@ function Reset-CrdbAdminIngress {
             }
         }
 
-        Remove-Variable -Name perm -Force
     }else{
         Write-Error "IP address not determined. No changes attempted. Exiting..."
     }
