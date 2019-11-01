@@ -13,7 +13,7 @@ param (
     $JumpBox
 )
 
-$PopRegion = (Get-DefaultAWSRegion).Region
+$PopRegion = $StoredAWSRegion
 $PushRegion = $btd_VPC.$Position.Region
 Set-DefaultAWSRegion $PushRegion
 
