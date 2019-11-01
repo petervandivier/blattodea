@@ -36,15 +36,15 @@ function Reset-CrdbAdminIngress {
 
         foreach($perm in $permSet){
             Set-Variable -Name perm -Option ReadOnly
-            $perm | ConvertTo-Json -Depth 5 | jq 
+            # $perm | ConvertTo-Json -Depth 5 | jq 
 
-            New-Variable -Name newPerm -Value ([PSCustomObject]$perm) -Force
-            $perm | ConvertTo-Json -Depth 5 | jq 
+            New-Variable -Name newPerm -Value ($perm | ConvertTo-Json -Depth 10 | ConvertFrom-Json) -Force
+            # $perm | ConvertTo-Json -Depth 5 | jq 
 
             $oldCidr = ($perm.IpV4Ranges | Where-Object {$_.Description -like "*$user*"}).CidrIp
 
-            $newPerm.IpRanges.Remove($oldCidr)
-            $newPerm.IpRanges.Add("$my_ip/32")
+            $newPerm.IpRanges = ($newPerm.IpRanges -ne $oldCidr) + "$my_ip/32"
+            $newPerm.IpRange = ($newPerm.IpRange -ne $oldCidr) + "$my_ip/32"
             $newPerm.Ipv4Ranges | Where-Object {$_.CidrIp -eq $oldCidr} | ForEach-Object {$_.CidrIp = "$my_ip/32"}
 
             Write-Verbose "Revoking CIDR '$oldCidr'"
