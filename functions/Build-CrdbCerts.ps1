@@ -83,7 +83,8 @@ Node missing required elements. Certficate issuance skipped.
     }
 
     process{
-        foreach($node in $cluster){
+        # Oldest Nodes first
+        foreach($node in ($cluster | Sort-Object LaunchTime)){
             $i +=1
             $nodeName = ($node.Tags | Where-Object Key -eq Name).Value
             Write-Verbose "Iterating node $i : '$($nodeName)'"
@@ -107,7 +108,9 @@ Node missing required elements. Certficate issuance skipped.
                 )
                 Invoke-Expression -Command $createCertCmd 
 
-                ($tmpSvcFile -f $node.PrivateIpAddress, $allIps, $Region) | Set-Content ./securecockroachdb.service -Force
+                $Locality = "aws-region=$Region"
+
+                ($tmpSvcFile -f $node.PrivateIpAddress, $allIps, $Locality) | Set-Content ./securecockroachdb.service -Force
                 dcp -o ConnectTimeout=5 -i $identFile ./securecockroachdb.service $User@$PublicIpAddress`:~/
                 Remove-Item ./securecockroachdb.service
 

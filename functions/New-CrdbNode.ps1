@@ -89,6 +89,7 @@ function New-CrdbNode {
 
     $getEc2 = [scriptblock]{Get-EC2Instance (@($n.Instances.InstanceId) + $ec2.Instances.InstanceId)}
     $cluster = (& $getEc2)
+    # TODO: tee output to appropiate $Position file, duping cluster conf atm
     $cluster | ConvertTo-Json -Depth 10 | Set-Content "./conf/actual/Cluster.$Position.json" -Force
 
     $allIps = ($cluster.Instances.PrivateIpAddress) -join ','
