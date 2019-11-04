@@ -89,6 +89,9 @@ Node missing required elements. Certficate issuance skipped.
             $identFile = (Resolve-Path "$IdentFileDir/$($node.KeyName).pem").Path
             $PublicIpAddress = $node.PublicIpAddress
 
+            $AvailabilityZone = $node.Placement.AvailabilityZone
+            $Region = [regex]::match($AvailabilityZone,'^(.*).$').Groups[1].Value
+
             if($null -in ($identFile,$PublicIpAddress)){
                 Write-Error ($errMsg -f @($identFile,$PublicIpAddress))
             }else{
@@ -103,7 +106,7 @@ Node missing required elements. Certficate issuance skipped.
                 )
                 Invoke-Expression -Command $createCertCmd 
 
-                ($tmpSvcFile -f $node.PrivateIpAddress, $allIps) | Set-Content ./securecockroachdb.service -Force
+                ($tmpSvcFile -f $node.PrivateIpAddress, $allIps, $Region) | Set-Content ./securecockroachdb.service -Force
                 dcp -o ConnectTimeout=5 -i $identFile ./securecockroachdb.service $User@$PublicIpAddress`:~/
                 Remove-Item ./securecockroachdb.service
 

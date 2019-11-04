@@ -8,24 +8,31 @@ $keyDir = Resolve-Path "$(Get-Location)/conf/secret"
 $getEc2 = [scriptblock]{Get-EC2Instance -InstanceId $ec2.Instances.InstanceId}
 $cluster = (& $getEc2)
 
+$User = $btd_Defaults.EC2.Image.DefaultUser
+
 $tmp = Get-Content ./templates/initdb/securecockroachdb.service.tmp -Raw
 $allIps = ($cluster.Instances.PrivateIpAddress) -join ','
 
 foreach($node in $cluster.Instances){
     $PublicIpAddress = $node.PublicIpAddress 
     $PrivateIpAddress = $node.PrivateIpAddress
-    
+
+    $AvailabilityZone = $node.Placement.AvailabilityZone
+    $Region = [regex]::match($AvailabilityZone,'^(.*).$').Groups[1].Value
+
+    $Locality="region=$Region"
+
     $identFile = Resolve-Path -Path  "$keyDir/$($node.KeyName).pem"
 
-    ($tmp -f $PrivateIpAddress, $allIps) | Set-Content ./templates/initdb/securecockroachdb.service -Force
+    ($tmp -f $PrivateIpAddress, $allIps, $Locality) | Set-Content ./templates/initdb/securecockroachdb.service -Force
 
-    dcp -i $identFile -o ConnectTimeout=5 ./templates/initdb/getbin.sh centos@$PublicIpAddress`:~/  
-    dcp -i $identFile -o ConnectTimeout=5 ./templates/initdb/initdb.sh centos@$PublicIpAddress`:~/  
-    dcp -i $identFile -o ConnectTimeout=5 ./templates/initdb/securecockroachdb.service centos@$PublicIpAddress`:~/  
+    dcp -i $identFile -o ConnectTimeout=5 ./templates/initdb/getbin.sh $User@$PublicIpAddress`:~/  
+    dcp -i $identFile -o ConnectTimeout=5 ./templates/initdb/initdb.sh $User@$PublicIpAddress`:~/  
+    dcp -i $identFile -o ConnectTimeout=5 ./templates/initdb/securecockroachdb.service $User@$PublicIpAddress`:~/  
     
-    dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'chmod +x ./getbin.sh && sudo ./getbin.sh'
-    dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'chmod +x ./initdb.sh && sudo ./initdb.sh'
-    dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'sudo systemctl start securecockroachdb'
+    dsh -i $identFile -o ConnectTimeout=5 $User@$PublicIpAddress 'chmod +x ./getbin.sh && sudo ./getbin.sh'
+    dsh -i $identFile -o ConnectTimeout=5 $User@$PublicIpAddress 'chmod +x ./initdb.sh && sudo ./initdb.sh'
+    dsh -i $identFile -o ConnectTimeout=5 $User@$PublicIpAddress 'sudo systemctl start securecockroachdb'
 
     Remove-Item ./templates/initdb/securecockroachdb.service
 }

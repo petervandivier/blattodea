@@ -35,7 +35,4 @@ if(& $getEc2){
 }
 Write-Host "$(Get-Date) : all nodes report state 'terminated'" -ForegroundColor Blue
 
-# TODO: ¿segregate Remove-EC2KeyPair for better make/destroy testing?
-Remove-EC2KeyPair -KeyName $btd_Defaults.KeyPair.Name -Confirm:$false 
-
 Set-DefaultAWSRegion $PopRegion

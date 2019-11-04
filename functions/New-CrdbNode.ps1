@@ -43,6 +43,8 @@ function New-CrdbNode {
     $ami = Invoke-Expression ($btd_Defaults.EC2.Image.Query -join '')
     $ami | ConvertTo-Json -Depth 5 | Set-Content "./conf/actual/AMI.$Position.json" -Force
 
+    $User = $btd_Defaults.EC2.Image.DefaultUser
+
     $image_splat = @{
         AssociatePublicIp = $true # TODO: deploy config via user data and rm public IP
         ImageId = $ami.ImageId
@@ -76,12 +78,12 @@ function New-CrdbNode {
             $i++
             Write-Host "Awaiting sshd startup on EC2 instance $HostName. Sleeping 10..." -ForegroundColor Yellow
             Start-Sleep -Seconds 10
-        } until ('alive' -eq (dsh -i $identFile -o ConnectTimeout=10 centos@$ip 'echo -n "alive"'))
+        } until ('alive' -eq (dsh -i $identFile -o ConnectTimeout=10 $User@$ip 'echo -n "alive"'))
     
-        dsh -i $identFile centos@$ip "sudo hostnamectl set-hostname '$HostName'"
+        dsh -i $identFile $User@$ip "sudo hostnamectl set-hostname '$HostName'"
         # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/set-time.html
-        dcp -i $identFile ./templates/default/mk-chrony.sh "centos@$ip`:/tmp/"
-        dsh -i $identFile centos@$ip 'sudo /tmp/mk-chrony.sh'
+        dcp -i $identFile ./templates/default/mk-chrony.sh "$User@$ip`:/tmp/"
+        dsh -i $identFile $User@$ip 'sudo /tmp/mk-chrony.sh'
     }
     $n = (& $getN)
 
@@ -94,8 +96,8 @@ function New-CrdbNode {
     $PublicIpAddress = $n.Instances[0].PublicIpAddress
     
     $tmp = Get-Content ./templates/initdb/securecockroachdb.service.tmp -Raw
-    ($tmp -f $PrivateIpAddress, $allIps) | Set-Content ./templates/initdb/securecockroachdb.service -Force
-    dcp -i $identFile ./templates/initdb/securecockroachdb.service centos@$PublicIpAddress`:~/
+    ($tmp -f $PrivateIpAddress, $allIps, $Region) | Set-Content ./templates/initdb/securecockroachdb.service -Force
+    dcp -i $identFile ./templates/initdb/securecockroachdb.service $User@$PublicIpAddress`:~/
     Remove-Item ./templates/initdb/securecockroachdb.service
 
     $OtherNames = ''

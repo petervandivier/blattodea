@@ -16,6 +16,7 @@ Param(
 )
 
 ./destroy/cluster
+./destroy/keypair
 ./destroy/loadbalancer
 ./destroy/network
 if($LocalToo){./destroy/local}
