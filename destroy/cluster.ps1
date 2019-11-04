@@ -22,7 +22,8 @@ $getEc2 = [scriptblock]{ (@($ec2.InstanceId + $jb.InstanceId) | Test-EC2Instance
 
 if((& $getEc2).Count -gt ($ec2.Count + $jb.Count)){
     Write-Error "Looks like you're fixin' to terminate someone else's instances, maybe chill with that."
-    return;
+    # This does nothing :/ TODO: debug
+    throw;
 }
 
 & $getEc2 | Remove-EC2Instance -Confirm:$false 
