@@ -85,12 +85,13 @@ Node missing required elements. Certficate issuance skipped.
     process{
         foreach($node in $cluster){
             $i +=1
-            Write-Host $i -ForegroundColor Green
+            $nodeName = ($node.Tags | Where-Object Key -eq Name).Value
+            Write-Verbose "Iterating node $i : '$($nodeName)'"
             $identFile = (Resolve-Path "$IdentFileDir/$($node.KeyName).pem").Path
             $PublicIpAddress = $node.PublicIpAddress
 
             $AvailabilityZone = $node.Placement.AvailabilityZone
-            $Region = [regex]::match($AvailabilityZone,'^(.*).$').Groups[1].Value
+            $Region = (Find-AWSRegion -AvailabilityZone $AvailabilityZone).Region
 
             if($null -in ($identFile,$PublicIpAddress)){
                 Write-Error ($errMsg -f @($identFile,$PublicIpAddress))

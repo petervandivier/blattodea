@@ -18,7 +18,7 @@ foreach($node in $cluster.Instances){
     $PrivateIpAddress = $node.PrivateIpAddress
 
     $AvailabilityZone = $node.Placement.AvailabilityZone
-    $Region = [regex]::match($AvailabilityZone,'^(.*).$').Groups[1].Value
+    $Region = (Find-AWSRegion -AvailabilityZone $AvailabilityZone).Region
 
     $Locality="region=$Region"
 

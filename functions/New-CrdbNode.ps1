@@ -19,7 +19,7 @@ function New-CrdbNode {
 
     # https://superuser.com/a/615808/457020
     # https://stackoverflow.com/a/9113746/4709762
-    $Region = [regex]::match($AvailabilityZone,'^(.*).$').Groups[1].Value
+    $Region = (Find-AWSRegion -AvailabilityZone $AvailabilityZone).Region
     $Position = ($btd_VPC.PSObject.Properties | Where-Object {$_.Value.Region -eq $Region}).Name
 
     if($null -eq $Position){
@@ -94,9 +94,10 @@ function New-CrdbNode {
     $allIps = ($cluster.Instances.PrivateIpAddress) -join ','
     $PrivateIpAddress = $n.Instances[0].PrivateIpAddress
     $PublicIpAddress = $n.Instances[0].PublicIpAddress
-    
+    $Locality = "aws-region=$Region"
+
     $tmp = Get-Content ./templates/initdb/securecockroachdb.service.tmp -Raw
-    ($tmp -f $PrivateIpAddress, $allIps, $Region) | Set-Content ./templates/initdb/securecockroachdb.service -Force
+    ($tmp -f $PrivateIpAddress, $allIps, $Locality) | Set-Content ./templates/initdb/securecockroachdb.service -Force
     dcp -i $identFile ./templates/initdb/securecockroachdb.service $User@$PublicIpAddress`:~/
     Remove-Item ./templates/initdb/securecockroachdb.service
 
@@ -106,9 +107,17 @@ function New-CrdbNode {
     }
     $OtherNames = $OtherNames -join ' '
 
+    $cluster = (Get-ChildItem "./conf/actual/Cluster.*.json" | Get-Content -Raw | ForEach-Object{ ConvertFrom-Json $_}).Instances
+    $cluster = $cluster | ForEach-Object {
+        $Region = (Find-AWSRegion -AvailabilityZone $_.Placement.AvailabilityZone).Region
+        if(Test-EC2Instance -InstanceId $_.InstanceId -Region $Region -Exists){
+            $_
+        }
+    }
+
     # ./make/certs ?
     $splat = @{
-        Cluster      = (Get-ChildItem "./conf/actual/Cluster.*.json" | Get-Content -Raw | ForEach-Object{ ConvertFrom-Json $_}).Instances
+        Cluster      = $cluster
         LoadBalancer = (Get-ChildItem "./conf/actual/LoadBalancer.*.json" | Get-Content -Raw | ForEach-Object{ ConvertFrom-Json $_})
         CertsDir     = $btd_Defaults.CertsDirectory
         OtherNames   = $OtherNames
