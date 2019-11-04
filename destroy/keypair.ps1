@@ -9,10 +9,4 @@ param (
     $Position = 'Default'
 )
 
-$PopRegion = $StoredAWSRegion
-$PushRegion = $btd_VPC.$Position.Region
-Set-DefaultAWSRegion $PushRegion
-
-Remove-EC2KeyPair -KeyName $btd_Defaults.KeyPair.Name -Confirm:$false 
-
-Set-DefaultAWSRegion $PopRegion
+Remove-EC2KeyPair -KeyName $btd_Defaults.KeyPair.Name -Confirm:$false -Region $btd_VPC.$Position.Region
