@@ -5,6 +5,7 @@
         "NamePattern":"crdb{0}",
         "InstanceType":"t3a.large",
         "Image":{
+            "DefaultUser":"centos",
             "Description":"most recently available aws marketplace community ami centos image",
             "Query":[
                 "Get-EC2Image -Filter @(",
@@ -21,13 +22,5 @@
         "Name":"cockroachdb",
         "BringYourOwn":false
     },
-    "CertsDirectory":"./conf/secret/.cockroachdb-certs",
-    "VPC": {
-        "Tags": [
-            {
-              "Key": "Name",
-              "Value": "vpc-crdb"
-            }
-        ]
-    }
+    "CertsDirectory":"./conf/secret/.cockroachdb-certs"
 }

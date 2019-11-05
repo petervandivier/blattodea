@@ -71,15 +71,28 @@ Node missing required elements. Certficate issuance skipped.
             cockroach cert create-ca --certs-dir=certs --ca-key=my-safe-directory/ca.key
         }
 
-        $elbPublicIpAddress = (dig $LoadBalancer.DNSName +short) -join ' '
+        $elbPublicIpAddress = ' '
+        $LoadBalancer_DNSName = $LoadBalancer.DNSName -join ' '
+        foreach($lb in $LoadBalancer){
+            $elbPublicIpAddress += (dig $lb.DNSName +short) -join ' '
+        }
 
         $createCertCmdTemplate = "cockroach cert create-node {0} {1} {2} {3} localhost 127.0.0.1 {4} {5} {6} --certs-dir=certs --ca-key=my-safe-directory/ca.key"
+    
+        $i = 0
     }
 
     process{
-        foreach($node in $cluster){
+        # Oldest Nodes first
+        foreach($node in ($cluster | Sort-Object LaunchTime)){
+            $i +=1
+            $nodeName = ($node.Tags | Where-Object Key -eq Name).Value
+            Write-Verbose "Iterating node $i : '$($nodeName)'"
             $identFile = (Resolve-Path "$IdentFileDir/$($node.KeyName).pem").Path
             $PublicIpAddress = $node.PublicIpAddress
+
+            $AvailabilityZone = $node.Placement.AvailabilityZone
+            $Region = (Find-AWSRegion -AvailabilityZone $AvailabilityZone).Region
 
             if($null -in ($identFile,$PublicIpAddress)){
                 Write-Error ($errMsg -f @($identFile,$PublicIpAddress))
@@ -90,26 +103,29 @@ Node missing required elements. Certficate issuance skipped.
                     $node.PrivateDnsName   # 2 
                     $PublicIpAddress       # 3 
                     $elbPublicIpAddress    # 4 
-                    $LoadBalancer.DNSName  # 5 
+                    $LoadBalancer_DNSName  # 5 
                     $OtherNames            # 6 
                 )
                 Invoke-Expression -Command $createCertCmd 
 
-                ($tmpSvcFile -f $node.PrivateIpAddress, $allIps) | Set-Content ./securecockroachdb.service -Force
-                dcp -o ConnectTimeout=5 -i $identFile ./securecockroachdb.service centos@$PublicIpAddress`:~/
+                $Locality = "aws-region=$Region"
+
+                ($tmpSvcFile -f $node.PrivateIpAddress, $allIps, $Locality) | Set-Content ./securecockroachdb.service -Force
+                dcp -o ConnectTimeout=5 -i $identFile ./securecockroachdb.service $User@$PublicIpAddress`:~/
                 Remove-Item ./securecockroachdb.service
 
                 dsh -i $identFile -o ConnectTimeout=5 $User@$PublicIpAddress 'rm -rf certs; mkdir certs'
                 dcp -i $identFile -o ConnectTimeout=5 -r certs/ $User@$PublicIpAddress`:~/
-                dcp -i $identFile -o ConnectTimeout=5 $initdbsh centos@$PublicIpAddress`:~/  
-                dcp -i $identFile -o ConnectTimeout=5 $getbinsh centos@$PublicIpAddress`:~/  
+                dcp -i $identFile -o ConnectTimeout=5 $initdbsh $User@$PublicIpAddress`:~/  
+                dcp -i $identFile -o ConnectTimeout=5 $getbinsh $User@$PublicIpAddress`:~/  
 
                 if($Clobber){
-                    dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'chmod +x ./getbin.sh && sudo bash ./getbin.sh'
-                    dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'chmod +x ./initdb.sh && sudo bash ./initdb.sh'
+                    dsh -i $identFile -o ConnectTimeout=5 $User@$PublicIpAddress 'chmod +x ./getbin.sh && sudo bash ./getbin.sh'
+                    dsh -i $identFile -o ConnectTimeout=5 $User@$PublicIpAddress 'chmod +x ./initdb.sh && sudo bash ./initdb.sh'
                     # ./initdb.sh only starts, force restart to clobber
-                    dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'sudo systemctl restart securecockroachdb'
-                    dsh -i $identFile -o ConnectTimeout=5 centos@$PublicIpAddress 'sudo systemctl daemon-reload'
+                    # restart needed? or is `daemon-reload` sufficient by itself?
+                    dsh -i $identFile -o ConnectTimeout=5 $User@$PublicIpAddress 'sudo systemctl restart securecockroachdb'
+                    dsh -i $identFile -o ConnectTimeout=5 $User@$PublicIpAddress 'sudo systemctl daemon-reload'
                 }
                 
                 Get-ChildItem -Path certs/node* | Remove-Item

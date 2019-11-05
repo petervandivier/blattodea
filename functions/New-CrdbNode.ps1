@@ -17,17 +17,33 @@ function New-CrdbNode {
         [string]$AvailabilityZone # assuming one subnet per AZ i guess
     )
 
-    $subnet = Get-Content ./conf/actual/Subnets.json | ConvertFrom-Json | 
+    # https://superuser.com/a/615808/457020
+    # https://stackoverflow.com/a/9113746/4709762
+    $Region = (Find-AWSRegion -AvailabilityZone $AvailabilityZone).Region
+    $Position = ($btd_VPC.PSObject.Properties | Where-Object {$_.Value.Region -eq $Region}).Name
+
+    if($null -eq $Position){
+        Write-Error "Position not found for given AZ '$AvailabilityZone'."
+        return;
+    }
+
+    $PopRegion = $StoredAWSRegion
+    $PushRegion = $Region
+    Set-DefaultAWSRegion $PushRegion
+
+    $subnet = Get-Content "./conf/actual/Subnets.$Position.json" | ConvertFrom-Json | 
         ForEach-Object { $PSItem } | # `ForEach-Object` is required to unwrap the array for `-eq` eval
         Where-Object {$_.AvailabilityZone -eq $AvailabilityZone}
-    $sg_id = (Get-Content ./conf/actual/SecurityGroup.json | ConvertFrom-Json).GroupId
-    $kp = Get-Content ./conf/actual/KeyPair.json | ConvertFrom-Json
+    $sg_id = (Get-Content "./conf/actual/SecurityGroup.$Position.json" | ConvertFrom-Json).GroupId
+    $kp = Get-Content "./conf/actual/KeyPair.json" | ConvertFrom-Json
     $identFile = Resolve-Path "./conf/secret/$($kp.KeyName).pem"
-    $ec2 = Get-Content -Path ./conf/actual/Cluster.json | ConvertFrom-Json
-    $elb = Get-Content -Path ./conf/actual/LoadBalancer.json | ConvertFrom-Json
+    $ec2 = Get-Content -Path "./conf/actual/Cluster.$Position.json" | ConvertFrom-Json
+    # $elb = Get-Content -Path "./conf/actual/LoadBalancer.$Position.json" | ConvertFrom-Json
 
     $ami = Invoke-Expression ($btd_Defaults.EC2.Image.Query -join '')
-    $ami | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/AMI.json -Force
+    $ami | ConvertTo-Json -Depth 5 | Set-Content "./conf/actual/AMI.$Position.json" -Force
+
+    $User = $btd_Defaults.EC2.Image.DefaultUser
 
     $image_splat = @{
         AssociatePublicIp = $true # TODO: deploy config via user data and rm public IP
@@ -62,35 +78,54 @@ function New-CrdbNode {
             $i++
             Write-Host "Awaiting sshd startup on EC2 instance $HostName. Sleeping 10..." -ForegroundColor Yellow
             Start-Sleep -Seconds 10
-        } until ('alive' -eq (dsh -i $identFile -o ConnectTimeout=10 centos@$ip 'echo -n "alive"'))
+        } until ('alive' -eq (dsh -i $identFile -o ConnectTimeout=10 $User@$ip 'echo -n "alive"'))
     
-        dsh -i $identFile centos@$ip "sudo hostnamectl set-hostname '$HostName'"
+        dsh -i $identFile $User@$ip "sudo hostnamectl set-hostname '$HostName'"
         # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/set-time.html
-        dcp -i $identFile ./templates/default/mk-chrony.sh "centos@$ip`:/tmp/"
-        dsh -i $identFile centos@$ip 'sudo /tmp/mk-chrony.sh'
+        dcp -i $identFile ./templates/default/mk-chrony.sh "$User@$ip`:/tmp/"
+        dsh -i $identFile $User@$ip 'sudo /tmp/mk-chrony.sh'
     }
     $n = (& $getN)
 
     $getEc2 = [scriptblock]{Get-EC2Instance (@($n.Instances.InstanceId) + $ec2.Instances.InstanceId)}
     $cluster = (& $getEc2)
-    $cluster | ConvertTo-Json -Depth 10 | Set-Content ./conf/actual/Cluster.json -Force
+    # TODO: tee output to appropiate $Position file, duping cluster conf atm
+    $cluster | ConvertTo-Json -Depth 10 | Set-Content "./conf/actual/Cluster.$Position.json" -Force
 
     $allIps = ($cluster.Instances.PrivateIpAddress) -join ','
     $PrivateIpAddress = $n.Instances[0].PrivateIpAddress
     $PublicIpAddress = $n.Instances[0].PublicIpAddress
-    
+    $Locality = "aws-region=$Region"
+
     $tmp = Get-Content ./templates/initdb/securecockroachdb.service.tmp -Raw
-    ($tmp -f $PrivateIpAddress, $allIps) | Set-Content ./templates/initdb/securecockroachdb.service -Force
-    dcp -i $identFile ./templates/initdb/securecockroachdb.service centos@$PublicIpAddress`:~/
+    ($tmp -f $PrivateIpAddress, $allIps, $Locality) | Set-Content ./templates/initdb/securecockroachdb.service -Force
+    dcp -i $identFile ./templates/initdb/securecockroachdb.service $User@$PublicIpAddress`:~/
     Remove-Item ./templates/initdb/securecockroachdb.service
 
-    $splat = @{
-        Cluster      = $cluster.Instances
-        LoadBalancer = $elb
-        CertsDir     = Resolve-Path ($btd_Defaults.CertsDirectory)
-        OtherNames   = [string]$null
-        Clobber      = $true # clobber forces restart
+    $OtherNames = ''
+    $OtherNames += foreach($region in $btd_VPC.PSObject.Properties.Value.Region){
+        "*.elb.$region.amazonaws.com"
     }
-    Build-CrdbCerts @splat   
+    $OtherNames = $OtherNames -join ' '
+
+    $cluster = (Get-ChildItem "./conf/actual/Cluster.*.json" | Get-Content -Raw | ForEach-Object{ ConvertFrom-Json $_}).Instances
+    $cluster = $cluster | ForEach-Object {
+        $Region = (Find-AWSRegion -AvailabilityZone $_.Placement.AvailabilityZone).Region
+        if(Test-EC2Instance -InstanceId $_.InstanceId -Region $Region -Exists){
+            $_
+        }
+    }
+
+    # ./make/certs ?
+    $splat = @{
+        Cluster      = $cluster
+        LoadBalancer = (Get-ChildItem "./conf/actual/LoadBalancer.*.json" | Get-Content -Raw | ForEach-Object{ ConvertFrom-Json $_})
+        CertsDir     = $btd_Defaults.CertsDirectory
+        OtherNames   = $OtherNames
+        Clobber      = $true
+    }
+    Build-CrdbCerts @splat 
+
+    Set-DefaultAWSRegion $PopRegion
 }
 

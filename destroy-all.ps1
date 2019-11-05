@@ -1,6 +1,5 @@
 #!/usr/bin/env pwsh
 
-. destroy/cluster
-. destroy/loadbalancer
-. destroy/network
-. destroy/local
+./destroy/peering
+./destroy-region Remote1
+./destroy-region Default -LocalToo

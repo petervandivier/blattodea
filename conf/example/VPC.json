@@ -1,3 +1,22 @@
 {
-  "CidrBlock": "10.0.0.0/16"
+    "Default":{
+        "Region":"us-east-2",
+        "CidrBlock": "10.0.0.0/16",
+        "Tags": [
+            {
+                "Key": "Name",
+                "Value": "vpc-crdb-df"
+            }
+        ]
+    },
+    "Remote1":{
+        "Region":"eu-west-1",
+        "CidrBlock": "172.16.0.0/16",
+        "Tags": [
+            {
+                "Key": "Name",
+                "Value": "vpc-crdb-rm1"
+            }
+        ]
+    }
 }

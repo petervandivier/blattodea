@@ -1,8 +1,24 @@
 #!/usr/bin/env pwsh
 #Requires -Module blattodea
 
-$vpc = Get-Content ./conf/actual/VPC.json | ConvertFrom-Json
-$igw = Get-Content ./conf/actual/IGW.json | ConvertFrom-Json
+[CmdletBinding()]
+param (
+    [Parameter()]
+    # TODO: https://vexx32.github.io/2018/11/29/Dynamic-ValidateSet/
+    [ValidateSet('Default','Remote1')]
+    [string]
+    $Position = 'Default',
+    [Parameter()]
+    [switch]
+    $JumpBox
+)
+
+$PopRegion = $StoredAWSRegion
+$PushRegion = $btd_VPC.$Position.Region
+Set-DefaultAWSRegion $PushRegion
+
+$vpc = Get-Content "./conf/actual/VPC.$Position.json" | ConvertFrom-Json
+$igw = Get-Content "./conf/actual/IGW.$Position.json" | ConvertFrom-Json
 
 $sg_id = New-EC2SecurityGroup -GroupName $btd_SecurityGroup.GroupName -Description $btd_SecurityGroup.Description -VpcId $vpc.VpcId
 New-EC2Tag -Resource $sg_id -Tag $btd_SecurityGroup.Tags
@@ -19,4 +35,8 @@ $rtb = Get-EC2RouteTable -Filter @{Name='vpc-id';Values=$vpc.VpcId}
 New-EC2Tag -ResourceId $rtb.RouteTableId -Tag $btd_CommonTags.ToTagArray()
 New-EC2Route -RouteTableId $rtb.RouteTableId -GatewayId $igw.InternetGatewayId -DestinationCidrBlock '0.0.0.0/0' | Out-Null 
 
-Get-EC2SecurityGroup $sg_id | ConvertTo-Json -Depth 5 | Set-Content ./conf/actual/SecurityGroup.json -Force
+Get-EC2RouteTable -RouteTableId $rtb.RouteTableId | ConvertTo-Json -Depth 5 | Set-Content "./conf/actual/RTB.$Position.json" -Force
+
+Get-EC2SecurityGroup $sg_id | ConvertTo-Json -Depth 5 | Set-Content "./conf/actual/SecurityGroup.$Position.json" -Force
+
+Set-DefaultAWSRegion $PopRegion

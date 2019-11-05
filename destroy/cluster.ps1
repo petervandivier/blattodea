@@ -1,9 +1,30 @@
 #!/usr/bin/env pwsh
 
-$ec2 = (Get-Content ./conf/actual/Cluster.json | ConvertFrom-Json).Instances
-$jh  = (Get-Content ./conf/actual/JumpBox.json | ConvertFrom-Json).Instances
+[CmdletBinding()]
+param (
+    [Parameter()]
+    # TODO: https://vexx32.github.io/2018/11/29/Dynamic-ValidateSet/
+    [ValidateSet('Default','Remote1')]
+    [string]
+    $Position = 'Default'
+)
 
-$getEc2 = [scriptblock]{Get-EC2Instance @($ec2.InstanceId + $jh.InstanceId)}
+$PopRegion = $StoredAWSRegion
+$PushRegion = $btd_VPC.$Position.Region
+Set-DefaultAWSRegion $PushRegion
+
+$ec2 = (Get-Content "./conf/actual/Cluster.$Position.json" | ConvertFrom-Json).Instances
+# TODO: handle jumpbox better
+$jb  = (Get-Content "./conf/actual/JumpBox.$Position.json" -ErrorAction SilentlyContinue | ConvertFrom-Json).Instances
+
+# Get-EC2Instance barfs on not-found InstancesIds, hence this handling
+$getEc2 = [scriptblock]{ (@($ec2.InstanceId + $jb.InstanceId) | Test-EC2Instance | Where-Object Exists).InstanceId | Get-EC2Instance }
+
+if((& $getEc2).Count -gt ($ec2.Count + $jb.Count)){
+    Write-Error "Looks like you're fixin' to terminate someone else's instances, maybe chill with that."
+    # This does nothing :/ TODO: debug
+    throw;
+}
 
 & $getEc2 | Remove-EC2Instance -Confirm:$false 
 
@@ -15,4 +36,4 @@ if(& $getEc2){
 }
 Write-Host "$(Get-Date) : all nodes report state 'terminated'" -ForegroundColor Blue
 
-Remove-EC2KeyPair -KeyName $btd_Defaults.KeyPair.Name -Confirm:$false 
+Set-DefaultAWSRegion $PopRegion

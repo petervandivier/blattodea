@@ -5,7 +5,7 @@ $subnets = Get-Content ./conf/actual/Subnets.json | ConvertFrom-Json
 $sg_id = (Get-Content ./conf/actual/SecurityGroup.json | ConvertFrom-Json).GroupId
 $kp = Get-Content ./conf/actual/KeyPair.json | ConvertFrom-Json
 
-# $sshKey = Resolve-Path "./conf/secret/$($kp.KeyName).pem"
+# $identFile = Resolve-Path "./conf/secret/$($kp.KeyName).pem"
 $ami = Invoke-Expression ($btd_JumpBox.EC2.Image.Query -join '')
 
 $image_splat = @{
@@ -46,18 +46,19 @@ while((& $getN).Instances.State.Name -ne 'running'){
 foreach($node in (& $getN).Instances) {
     $nodeName = ($node.Tags | Where-Object Key -eq Name).Value
     $ip = $node.PublicIpAddress
+    $identFile = Resolve-Path "./conf/secret/$($node.KeyName).pem"
 
-    if('alive' -ne (dsh -i $sshKey -o ConnectTimeout=10 centos@$ip 'echo -n "alive"')){
+    if('alive' -ne (dsh -i $identFile -o ConnectTimeout=10 centos@$ip 'echo -n "alive"')){
         do {   
             if(0 -eq ($i % 6)){ Write-Host "-- You may press ctrl+c to abort. This is the last step in make/jumpbox" -ForegroundColor Blue }
             $i++
 
             Write-Host "Awaiting sshd startup on EC2 instance $nodeName. Sleeping 10..." -ForegroundColor Yellow
             Start-Sleep -Seconds 10
-        } until ('alive' -eq (dsh -i $sshKey -o ConnectTimeout=10 centos@$ip 'echo -n "alive"'))
+        } until ('alive' -eq (dsh -i $identFile -o ConnectTimeout=10 centos@$ip 'echo -n "alive"'))
     }
 
-    dsh -i $sshKey centos@$ip "sudo hostnamectl set-hostname '$($nodeName)'"
+    dsh -i $identFile centos@$ip "sudo hostnamectl set-hostname '$($nodeName)'"
 }
 
 & $getN | ConvertTo-Json -Depth 10 | Set-Content ./conf/actual/JumpBox.json -Force

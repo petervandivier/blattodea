@@ -1,10 +1,11 @@
 #!/usr/bin/env pwsh
 #Requires -Module blattodea
 
-$script:ec2 = Get-Content ./conf/actual/Cluster.json | ConvertFrom-Json
+$script:nodes = (Get-ChildItem "./conf/actual/Cluster.*.json" | Get-Content -Raw | ForEach-Object{ ConvertFrom-Json $_}).Instances
 
-foreach($key in ($ec2.Instances.KeyName | Select-Object -Unique)){
+foreach($key in ($nodes.KeyName | Select-Object -Unique)){
     Remove-Item -Path "./conf/secret/$key.pem"
+    Remove-Item -Path "./conf/secret/$key.pub" -ErrorAction SilentlyContinue
 }
 
-Remove-Item $btd_Defaults.CertsDirectory -Recurse -Force
+Remove-Item $btd_Defaults.CertsDirectory -Recurse -Force 

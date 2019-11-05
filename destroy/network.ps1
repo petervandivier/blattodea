@@ -1,9 +1,22 @@
 #!/usr/bin/env pwsh
 
-$vpc =  Get-Content ./conf/actual/VPC.json           | ConvertFrom-Json
-$sn  =  Get-Content ./conf/actual/Subnets.json       | ConvertFrom-Json
-$igw =  Get-Content ./conf/actual/IGW.json           | ConvertFrom-Json
-$sg  =  Get-Content ./conf/actual/SecurityGroup.json | ConvertFrom-Json
+[CmdletBinding()]
+param (
+    [Parameter()]
+    # TODO: https://vexx32.github.io/2018/11/29/Dynamic-ValidateSet/
+    [ValidateSet('Default','Remote1')]
+    [string]
+    $Position = 'Default'
+)
+
+$PopRegion = $StoredAWSRegion
+$PushRegion = $btd_VPC.$Position.Region
+Set-DefaultAWSRegion $PushRegion
+
+$vpc =  Get-Content "./conf/actual/VPC.$Position.json"           | ConvertFrom-Json
+$sn  =  Get-Content "./conf/actual/Subnets.$Position.json"       | ConvertFrom-Json
+$igw =  Get-Content "./conf/actual/IGW.$Position.json"           | ConvertFrom-Json
+$sg  =  Get-Content "./conf/actual/SecurityGroup.$Position.json" | ConvertFrom-Json
 
 $getEni = [scriptblock]{Get-EC2NetworkInterface -Filter @{Name='vpc-id';Value=$vpc.VpcId}}
 $getSubnet = [scriptblock]{Get-EC2Subnet -Filter @{Name='subnet-id';Value=$sn.SubnetId}}
@@ -33,3 +46,5 @@ do{
 }while(0 -lt (& $getSubnet).Count)
 
 Remove-EC2Vpc -VpcId $vpc.VpcId -Confirm:$false
+
+Set-DefaultAWSRegion $PopRegion
