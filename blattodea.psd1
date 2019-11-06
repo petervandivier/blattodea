@@ -15,4 +15,5 @@
     FunctionsToExport = '*'
     CmdletsToExport = '*'
     VariablesToExport = '*'
+    ScriptsToProcess = @('./classes.ps1')
 }
