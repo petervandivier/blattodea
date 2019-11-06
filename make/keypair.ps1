@@ -32,7 +32,7 @@ if((Get-EC2KeyPair).KeyName -contains $btd_Defaults.KeyPair.Name){
     Write-Warning "Hot-swapping KeyName in conf. New name is '$($btd_Defaults.KeyPair.Name)'."
 }
 
-$kp = New-EC2KeyPair -KeyName $btd_Defaults.KeyPair.Name
+$kp = New-EC2KeyPair -KeyName $btd_Defaults.KeyPair.Name -Region $btd_VPC.$Position.Region
 
 $sshKey = "conf/secret/$($kp.KeyName).pem"
 
