@@ -3,14 +3,24 @@
 
 # this will only work for two-region peering
 # need to gamify from->to decision logic for 3+ regions
-$acceptPosition  = 'Remote1'
-$requestPosition = 'Default'
+[CmdletBinding()]
+param (
+    [Parameter()]
+    [ValidateSet([ValidBtdPositionGenerator])]
+    [string]
+    $acceptPosition  = 'Remote1',
+
+    [Parameter()]
+    [ValidateSet([ValidBtdPositionGenerator])]
+    [string]
+    $requestPosition = 'Default'
+)
 
 $acceptVpc  = Get-Content "./conf/actual/VPC.$acceptPosition.json"  | ConvertFrom-Json 
 $requestVpc = Get-Content "./conf/actual/VPC.$requestPosition.json" | ConvertFrom-Json 
 
 $peerSplat = @{
-    #Region      = $btd_VPC.$requestPosition.Region
+    Region      = $btd_VPC.$requestPosition.Region
     VpcId       = $requestVpc.VpcId
     PeerVpcId   = $acceptVpc.VpcId
     PeerOwnerId = $acceptVpc.OwnerId
@@ -22,11 +32,16 @@ $peer = New-EC2VpcPeeringConnection @peerSplat -Verbose
 # TODO: await() this shit properly
 Start-Sleep -Seconds 5 
 
-Approve-EC2VpcPeeringConnection -VpcPeeringConnectionId $peer.VpcPeeringConnectionId -Region $btd_VPC.$acceptPosition.Region -Verbose
+Approve-EC2VpcPeeringConnection `
+    -VpcPeeringConnectionId $peer.VpcPeeringConnectionId `
+    -Region $btd_VPC.$acceptPosition.Region `
+    -Verbose
 
 Start-Sleep -Seconds 5 
 
-$peer = Get-EC2VpcPeeringConnection -VpcPeeringConnectionId $peer.VpcPeeringConnectionId 
+$peer = Get-EC2VpcPeeringConnection `
+    -VpcPeeringConnectionId $peer.VpcPeeringConnectionId `
+    -Region $btd_VPC.$requestPosition.Region
 
 $acceptRtb  = Get-Content "./conf/actual/RTB.$acceptPosition.json"  | ConvertFrom-Json
 $requestRtb = Get-Content "./conf/actual/RTB.$requestPosition.json" | ConvertFrom-Json
@@ -46,7 +61,13 @@ New-EC2Route `
         Out-Null
 
 # i _think_ the rtb updates are shown on the pcx object? should prob check at some point...
-$peer | ConvertTo-Json -Depth 5 | Set-Content "./conf/actual/Peering.json" -Force
+$peer | ConvertTo-Json -Depth 5 | Set-Content "./conf/actual/pcx-$acceptPosition-$requestPosition.json" -Force
+New-Item `
+    -ItemType SymbolicLink `
+    -Path "./conf/actual/" `
+    -Name "pcx-$requestPosition-$acceptPosition.json" `
+    -Value "pcx-$acceptPosition-$requestPosition.json" `
+    -Force
 
 $script:acceptSg  = Get-Content "./conf/actual/SecurityGroup.$acceptPosition.json"  | ConvertFrom-Json
 $script:requestSg = Get-Content "./conf/actual/SecurityGroup.$requestPosition.json" | ConvertFrom-Json
@@ -65,7 +86,10 @@ foreach($port in @(8080,26257,22)){
 # TODO: Add descriptions
     }
 
-    Grant-EC2SecurityGroupIngress -GroupId $acceptSg.GroupId  -IpPermission $perm -Region $peer.AccepterVpcInfo.Region
+    Grant-EC2SecurityGroupIngress `
+        -GroupId $acceptSg.GroupId `
+        -IpPermission $perm `
+        -Region $peer.AccepterVpcInfo.Region
 }
 # TODO: allow ping
 
@@ -77,6 +101,10 @@ foreach($port in @(8080,26257,22)){
         IpRange = $peer.AccepterVpcInfo.CidrBlock
 # TODO: Add descriptions
     }
-    Grant-EC2SecurityGroupIngress -GroupId $requestSg.GroupId -IpPermission $perm -Region $peer.RequesterVpcInfo.Region
+
+    Grant-EC2SecurityGroupIngress `
+        -GroupId $requestSg.GroupId `
+        -IpPermission $perm `
+        -Region $peer.RequesterVpcInfo.Region
 }
 # TODO: allow ping
