@@ -19,8 +19,8 @@ Get-ChildItem "./templates/schema/*/*.schema.sql" -Recurse |
   Where-Object Directory -NotLike "*example*" | 
   ForEach-Object {
     $db = $_.BaseName.Split('.')[0]
-    Write-Output "create database $db;" | cockroach sql --certs-dir=$certsDir --host=$IP 
-    Get-Content $_.FullName -Raw | cockroach sql --certs-dir=$certsDir --host=$IP --database=$db
+    Write-Output "create database $db;" | Invoke-CrdbSqlCmd -certsDir $certsDir -SqlHost $IP
+    Get-Content $_.FullName -Raw | Invoke-CrdbSqlCmd -certsDir $certsDir -SqlHost $IP -Database $db
 }
 
 foreach($user in $btd_Users){
