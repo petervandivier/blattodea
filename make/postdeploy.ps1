@@ -8,12 +8,20 @@ param (
     $NoLaunch
 )
 
-$script:ec2 = Get-Content ./conf/actual/Cluster.json | ConvertFrom-Json
+$script:ec2 = Get-Content "./conf/actual/Cluster.Default.json" | ConvertFrom-Json
 $script:IP = $ec2.Instances[0].PublicIPAddress
 
 if(-not $NoLaunch){Enter-CrdbAdminUi}
 
 Register-CrdbEnvVars
+
+Get-ChildItem "./templates/schema/*/*.schema.sql" -Recurse | 
+  Where-Object Directory -NotLike "*example*" | 
+  ForEach-Object {
+    $db = $_.BaseName.Split('.')[0]
+    Write-Output "create database $db;" | cockroach sql --certs-dir=$certsDir --host=$IP 
+    Get-Content $_.FullName -Raw | cockroach sql --certs-dir=$certsDir --host=$IP --database=$db
+}
 
 foreach($user in $btd_Users){
     $cmd = "CREATE USER $($user.username) WITH PASSWORD '$($user.password)';"
