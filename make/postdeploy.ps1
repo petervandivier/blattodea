@@ -23,6 +23,20 @@ Get-ChildItem "./templates/schema/*/*.schema.sql" -Recurse |
     Get-Content $_.FullName -Raw | Invoke-CrdbSqlCmd -certsDir $certsDir -SqlHost $IP -Database $db
 }
 
+Get-ChildItem "./templates/schema/*/*.data.sql" -Recurse | 
+  Where-Object Directory -NotLike "*example*" | 
+  ForEach-Object {
+    $db = $_.BaseName.Split('.')[0]
+    Get-Content $_.FullName -Raw | Invoke-CrdbSqlCmd -certsDir $certsDir -SqlHost $IP -Database $db
+}
+
+Get-ChildItem "./templates/schema/*/*.postdeploy.sql" -Recurse | 
+  Where-Object Directory -NotLike "*example*" | 
+  ForEach-Object {
+    $db = $_.BaseName.Split('.')[0]
+    Get-Content $_.FullName -Raw | Invoke-CrdbSqlCmd -certsDir $certsDir -SqlHost $IP -Database $db
+}
+
 foreach($user in $btd_Users){
     $cmd = "CREATE USER $($user.username) WITH PASSWORD '$($user.password)';"
     cockroach sql --certs-dir=$certsDir --host="$IP" --execute="$cmd"
