@@ -1,6 +1,6 @@
 
 -- modified from 
--- https://dataedo.com/samples/html/World_PostgreSQL/doc/World_(PostgreSQL_database)_11/home.html
+-- https://github.com/ghusta/docker-postgres-world-db
 
 CREATE TABLE city (
     id          integer      NOT NULL,
