@@ -8,6 +8,10 @@ conf/target/*
 conf/actual/*
 !conf/actual/README.md
 
+templates/schema/*
+!templates/schema/README.md
+!templates/schema/example
+
 # monkey-patch symlinks for remote/multi-VPC refactor
 !/conf/actual/VPC.json
 !/conf/actual/Subnets.json
