@@ -19,7 +19,9 @@ Param(
 ./make/cluster $Position
 if($JumpBox){./make/jumpbox} 
 ./make/loadbalancer $Position -JumpBox:$JumpBox
-if($Position -ne 'Default'){./make/peering}
+if($Position -ne 'Default'){
+    ./make/peering
+}
 ./make/certs $Position -JumpBox:$JumpBox
 # Build-CrdbCerts also inits. TODO: tidy
 if($Position -eq 'Default'){

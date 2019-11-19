@@ -1,17 +1,28 @@
 #!/usr/bin/env pwsh
 
-# still only works for 2 regions
+[CmdletBinding()]
+param (
+    [Parameter()]
+    [ValidateSet([ValidBtdPositionGenerator])]
+    [string]
+    $acceptPosition  = 'Remote1',
+
+    [Parameter()]
+    [ValidateSet([ValidBtdPositionGenerator])]
+    [string]
+    $requestPosition = 'Default'
+)
 
 # to seek level-two common values in level-1 nodes with arbitrary names:
 #   $peer.PSObject.Properties.Value.* for non-hashtable support
 #   $peer.Values.* for hashtable or non-hashtable
 #   HT @chrisident / @vexx32 - https://powershell.slack.com/archives/C1RCWRDL4/p1572357830108900
-$script:peer = Get-Content "./conf/actual/Peering.json" | ConvertFrom-Json 
+$script:peer = Get-Content "./conf/actual/pcx-$acceptPosition-$requestPosition.json" | ConvertFrom-Json 
 
-Remove-EC2VpcPeeringConnection -VpcPeeringConnectionId $peer.VpcPeeringConnectionId -Confirm:$false
-
-$script:acceptPosition  = 'Remote1'
-$script:requestPosition = 'Default'
+Remove-EC2VpcPeeringConnection `
+    -VpcPeeringConnectionId $peer.VpcPeeringConnectionId `
+    -Region $btd_VPC.$requestPosition.Region `
+    -Confirm:$false 
 
 $script:acceptRtb  = Get-Content "./conf/actual/RTB.$acceptPosition.json"  | ConvertFrom-Json
 $script:requestRtb = Get-Content "./conf/actual/RTB.$requestPosition.json" | ConvertFrom-Json

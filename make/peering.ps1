@@ -1,8 +1,6 @@
 #!/usr/bin/env pwsh
 #Requires -Module blattodea
 
-# this will only work for two-region peering
-# need to gamify from->to decision logic for 3+ regions
 [CmdletBinding()]
 param (
     [Parameter()]
