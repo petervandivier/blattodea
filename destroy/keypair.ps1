@@ -4,7 +4,7 @@
 param (
     [Parameter()]
     # TODO: https://vexx32.github.io/2018/11/29/Dynamic-ValidateSet/
-    [ValidateSet('Default','Remote1')]
+    [ValidateSet([ValidBtdPositionGenerator])]
     [string]
     $Position = 'Default'
 )
