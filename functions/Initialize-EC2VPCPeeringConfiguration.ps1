@@ -23,10 +23,12 @@ function Initialize-EC2VPCPeeringConfiguration {
         PeerRegion  = $btd_VPC.$acceptPosition.Region
     }
     $peer = New-EC2VpcPeeringConnection @peerSplat -Verbose 
-    # TODO: tag:common & tag:name requester & accepter
 
     # TODO: await() this shit properly
     Start-Sleep -Seconds 5 
+
+    New-EC2Tag -Resource $peer.VpcPeeringConnectionId -Tag $btd_CommonTags.ToTagArray() -Region $btd_VPC.$requestPosition.Region
+    New-EC2Tag -Resource $peer.VpcPeeringConnectionId -Tag @([Amazon.EC2.Model.Tag]::new('Name',"pcx-$requestPosition-$acceptPosition")) -Region $btd_VPC.$requestPosition.Region
 
     Approve-EC2VpcPeeringConnection `
         -VpcPeeringConnectionId $peer.VpcPeeringConnectionId `
@@ -35,9 +37,13 @@ function Initialize-EC2VPCPeeringConfiguration {
 
     Start-Sleep -Seconds 5 
 
+    New-EC2Tag -Resource $peer.VpcPeeringConnectionId -Tag $btd_CommonTags.ToTagArray() -Region $btd_VPC.$acceptPosition.Region
+    New-EC2Tag -Resource $peer.VpcPeeringConnectionId -Tag @([Amazon.EC2.Model.Tag]::new('Name',"pcx-$acceptPosition-$requestPosition")) -Region $btd_VPC.$acceptPosition.Region
+
     $peer = Get-EC2VpcPeeringConnection `
         -VpcPeeringConnectionId $peer.VpcPeeringConnectionId `
         -Region $btd_VPC.$requestPosition.Region
+
 
     $acceptRtb  = Get-Content "./conf/actual/RTB.$acceptPosition.json"  | ConvertFrom-Json
     $requestRtb = Get-Content "./conf/actual/RTB.$requestPosition.json" | ConvertFrom-Json
