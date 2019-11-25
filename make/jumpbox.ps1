@@ -22,6 +22,11 @@ $certsDirectory = Resolve-Path $btd_Defaults.CertsDirectory
 # $identFile = Resolve-Path "./conf/secret/$($kp.KeyName).pem"
 $ami = Invoke-Expression ($btd_JumpBox.EC2.Image.Query -join '')
 
+if((Get-EC2AvailabilityZone -Region $PushRegion).AvailabilityZone -notcontains $btd_JumpBox.AvailabilityZone){
+    $btd_JumpBox.AvailabilityZone = $subnets[0].AvailabilityZone
+    $btd_JumpBox.EC2.Subnet       = $subnets[0].AvailabilityZone
+}
+
 $image_splat = @{
     AssociatePublicIp = $true
     ImageId = $ami.ImageId
