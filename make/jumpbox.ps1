@@ -1,9 +1,23 @@
 #!/usr/bin/env pwsh
 #Requires -Module blattodea
 
-$subnets = Get-Content ./conf/actual/Subnets.json | ConvertFrom-Json
-$sg_id = (Get-Content ./conf/actual/SecurityGroup.json | ConvertFrom-Json).GroupId
-$kp = Get-Content ./conf/actual/KeyPair.json | ConvertFrom-Json
+[CmdletBinding()]
+param (
+    [Parameter()]
+    [ValidateSet([ValidBtdPositionGenerator])]
+    [string]
+    $Position = 'Default'
+)
+
+$PopRegion = $StoredAWSRegion
+$PushRegion = $btd_VPC.$Position.Region
+Set-DefaultAWSRegion $PushRegion
+
+$subnets = Get-Content "./conf/actual/Subnets.$Position.json" | ConvertFrom-Json
+$sg_id = (Get-Content "./conf/actual/SecurityGroup.$Position.json" | ConvertFrom-Json).GroupId
+$kp = Get-Content "./conf/actual/KeyPair.json" | ConvertFrom-Json
+
+$certsDirectory = Resolve-Path $btd_Defaults.CertsDirectory
 
 # $identFile = Resolve-Path "./conf/secret/$($kp.KeyName).pem"
 $ami = Invoke-Expression ($btd_JumpBox.EC2.Image.Query -join '')
@@ -43,6 +57,18 @@ while((& $getN).Instances.State.Name -ne 'running'){
     Start-Sleep -Seconds 10
 } 
 
+$caKey = "$certsDirectory/my-safe-directory/ca.key"
+if(Test-Path $caKey){
+    $clientCerts = "$certsDirectory/client"
+    New-Item -Type Directory -Path $clientCerts
+
+    foreach($usr in $btd_Users){
+        cockroach cert create-client --certs-dir="$certsDirectory/certs/" --ca-key=$caKey $usr.username
+        Move-Item "$certsDirectory/certs/*$($usr.username)*" $clientCerts
+        Copy-Item "$certsDirectory/certs/ca.crt" $clientCerts
+    }
+}
+
 foreach($node in (& $getN).Instances) {
     $nodeName = ($node.Tags | Where-Object Key -eq Name).Value
     $ip = $node.PublicIpAddress
@@ -58,8 +84,17 @@ foreach($node in (& $getN).Instances) {
         } until ('alive' -eq (dsh -i $identFile -o ConnectTimeout=10 centos@$ip 'echo -n "alive"'))
     }
 
+    dcp -i $identFile "./templates/initdb/getbin.sh" centos@$ip`:~/
+    dcp -r -i $identFile $clientCerts centos@$ip`:~/
+    dsh -i $identFile centos@$ip "chmod +x ./getbin.sh && sudo ./getbin.sh"
     dsh -i $identFile centos@$ip "sudo hostnamectl set-hostname '$($nodeName)'"
 }
 
-& $getN | ConvertTo-Json -Depth 10 | Set-Content ./conf/actual/JumpBox.json -Force
+Remove-Item $clientCerts -Recurse
+# Write-Host $clientCerts -ForegroundColor Green
+
+# TODO: properly inventory jumpboxes
+& $getN | ConvertTo-Json -Depth 10 | Set-Content "./conf/actual/JumpBox.$Position.json" -Force
 # https://www.cockroachlabs.com/docs/stable/deploy-cockroachdb-on-aws.html#step-9-run-a-sample-workload
+
+Set-DefaultAWSRegion $PopRegion
